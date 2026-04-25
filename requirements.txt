@@ -3,7 +3,6 @@ PyYAML
 numpy
 pandas
 scikit-learn
-requests
 hopsworks
 joblib
 streamlit
