@@ -1,0 +1,29 @@
+name: Daily Model Training Pipeline
+
+on:
+  schedule:
+    - cron: "0 2 * * *"   # daily at 2 AM UTC
+  workflow_dispatch:
+
+jobs:
+  training_pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Train and register model
+        env:
+          HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+        run: |
+          python training/train_and_register.py
