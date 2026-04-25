@@ -3,7 +3,7 @@ PyYAML
 numpy
 pandas
 scikit-learn
-hopsworks
 joblib
 streamlit
 shap
+hopsworks[python]
