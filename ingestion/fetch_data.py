@@ -33,10 +33,3 @@ def fetch_data():
         "humidity": weather["main"]["humidity"],
         "wind": weather["wind"]["speed"]
     }])
-
-# ✅ CALL THE FUNCTION
-if __name__ == "__main__":
-    df = fetch_data()
-    print("✅ DATA FETCHED SUCCESSFULLY")
-    print(df.head())
-    print("Rows:", len(df))

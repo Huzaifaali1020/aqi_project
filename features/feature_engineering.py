@@ -1,13 +1,10 @@
-def create_features(df):
-    df["hour"] = df["timestamp"].dt.hour
-    df["day"] = df["timestamp"].dt.day
-    df["month"] = df["timestamp"].dt.month
+from ingestion.fetch_data import fetch_data
+from storage.hopsworks_fs import write_features
 
-    df = df.sort_values("timestamp")
+def run_feature_pipeline():
+    df = fetch_data()
+    write_features(df)
+    print("✅ Features stored in Hopsworks")
 
-    df["aqi_lag_1"] = df["aqi"].shift(1)
-    df["aqi_lag_3"] = df["aqi"].shift(3)
-    df["aqi_roll_mean"] = df["aqi"].rolling(3).mean()
-    df["aqi_change_rate"] = df["aqi"] - df["aqi_lag_1"]
-
-    return df.dropna()
+if __name__ == "__main__":
+    run_feature_pipeline()
