@@ -1,0 +1,7 @@
+city: "YOUR_CITY"
+
+api:
+  aqi_url: "https://api.waqi.info/feed/YOUR_CITY/"
+  aqi_key: "PASTE_YOUR_KEY_HERE"
+  weather_url: "https://api.openweathermap.org/data/2.5/weather"
+  weather_key: "PASTE_YOUR_KEY_HERE"

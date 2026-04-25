@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual env
+venv/
+.env/
+
+# Secrets
+config/config.yaml
+
+# Models
+models/*.pkl

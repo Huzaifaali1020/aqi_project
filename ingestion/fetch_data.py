@@ -24,7 +24,7 @@ def fetch_data():
     ).json()
 
     return pd.DataFrame([{
-        "timestamp": datetime.utcnow(),
+        "timestamp": datetime.now(),   # ✅ LOCAL TIME
         "aqi": aqi["data"]["aqi"],
         "pm25": aqi["data"]["iaqi"].get("pm25", {}).get("v", 0),
         "pm10": aqi["data"]["iaqi"].get("pm10", {}).get("v", 0),
