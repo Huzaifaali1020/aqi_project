@@ -23,7 +23,7 @@ def fetch_data():
         }
     ).json()
 
-    return pd.DataFrame([{
+    df = pd.DataFrame([{
         "timestamp": datetime.utcnow(),
         "aqi": aqi["data"]["aqi"],
         "pm25": aqi["data"]["iaqi"].get("pm25", {}).get("v", 0),
@@ -33,3 +33,9 @@ def fetch_data():
         "humidity": weather["main"]["humidity"],
         "wind": weather["wind"]["speed"]
     }])
+
+    print("✅ DATA FETCHED SUCCESSFULLY")
+    print(df.head())
+    print("Rows:", len(df))
+
+    return df
