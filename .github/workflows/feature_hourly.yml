@@ -36,6 +36,7 @@ jobs:
           AQI_API_KEY: ${{ secrets.AQI_API_KEY }}
           WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
           HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+          PYTHONPATH: .
         run: |
           python ingestion/fetch_data.py
           python features/feature_engineering.py
