@@ -1,0 +1,9 @@
+requests
+numpy
+pandas
+scikit-learn
+requests
+hopsworks
+joblib
+streamlit
+shap
