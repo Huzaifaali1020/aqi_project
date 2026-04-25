@@ -36,5 +36,5 @@ jobs:
           WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
           HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
         run: |
-          python ingestion/fetch_data.py
-          python features/feature_engineering.py
+          python -m ingestion.fetch_data
+          python -m features.feature_engineering
