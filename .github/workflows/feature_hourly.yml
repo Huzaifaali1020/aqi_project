@@ -44,6 +44,7 @@ jobs:
       - name: Run ingestion + feature pipeline
         env:
           PYTHONPATH: .
+          HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
         run: |
           python ingestion/fetch_data.py
           python features/feature_engineering.py
