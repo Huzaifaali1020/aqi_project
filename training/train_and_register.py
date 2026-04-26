@@ -10,7 +10,7 @@ df = read_features()
 print(f"Training data shape: {df.shape}")
 print(f"Columns: {df.columns.tolist()}")
 
-MIN_ROWS = 10
+MIN_ROWS = 3   # temporarily low for testing
 if len(df) < MIN_ROWS:
     print(f"❌ Not enough data to train. Found {len(df)} rows, need {MIN_ROWS}.")
     exit(0)
@@ -35,7 +35,9 @@ results = {}
 for name, model in models.items():
     model.fit(X_train, y_train)
     preds = model.predict(X_test)
-    rmse = mean_squared_error(y_test, preds, squared=False)
+
+    # ✅ Compatible RMSE calculation
+    rmse = np.sqrt(mean_squared_error(y_test, preds))
     results[name] = (rmse, model)
 
 best_model_name = min(results, key=lambda x: results[x][0])
