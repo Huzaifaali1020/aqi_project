@@ -20,12 +20,17 @@ def run_feature_pipeline():
 
     fg = fs.get_or_create_feature_group(
         name="aqi_features",
-        version=1,
+        version=2,
         primary_key=["timestamp"],
         description="Hourly air quality and weather features"
     )
 
-    df = fetch_data()
+    raw_fg = fs.get_feature_group(
+        name="aqi_features",
+        version=1
+    )
+
+    df = raw_fg.read()
     df = transform_features(df)
     print("Data fetched:")
     print(df)

@@ -15,8 +15,8 @@ if len(df) < MIN_ROWS:
     print(f"❌ Not enough data to train. Found {len(df)} rows, need {MIN_ROWS}.")
     exit(0)
 
-X = df.drop(columns=["aqi", "timestamp"])
-y = df["aqi"]
+X = df.drop(columns=["aqi_next_hour", "timestamp"])
+y = df["aqi_next_hour"]
 
 split = int(len(df) * 0.8)
 X_train, X_test = X.iloc[:split], X.iloc[split:]

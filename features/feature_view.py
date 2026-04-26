@@ -16,7 +16,7 @@ def create_feature_view():
 
     fg = fs.get_feature_group(
         name="aqi_features",
-        version=1
+        version=2
     )
 
     fv = fs.get_or_create_feature_view(
