@@ -11,3 +11,5 @@ config/config.yaml
 
 # Models
 models/*.pkl
+
+config.yaml
