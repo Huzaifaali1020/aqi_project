@@ -30,9 +30,9 @@ jobs:
           cat <<EOF > config/config.yaml
           hopsworks:
             api_key: "${{ secrets.HOPSWORKS_API_KEY }}"
-            project: "${{ secrets.HOPSWORKS_PROJECT }}"
           api:
-            openweather_key: "${{ secrets.OPENWEATHER_API_KEY }}"
+            aqi_key: "${{ secrets.AQI_API_KEY }}"
+            weather_key: "${{ secrets.WEATHER_API_KEY }}"
           EOF
 
       - name: Run ingestion + feature pipeline
