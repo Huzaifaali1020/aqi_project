@@ -1,31 +1,33 @@
-import os
 import hopsworks
-import pandas as pd
+import yaml
+import os
+
+# ✅ IMPORT fetch_data
 from ingestion.fetch_data import fetch_data
 
-def run_feature_pipeline():
-    # 1. Fetch data
-    df = fetch_data()
-    print("Data fetched:")
-    print(df.head())
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CONFIG_PATH = os.path.join(BASE_DIR, "config", "config.yaml")
 
-    # 2. Login to Hopsworks using ENV key
+with open(CONFIG_PATH, "r") as f:
+    config = yaml.safe_load(f)
+
+def run_feature_pipeline():
+    # ✅ SAME AS YESTERDAY (NO ENV VAR)
+    api_key_value = config["hopsworks"]["api_key"]
+
     project = hopsworks.login(
-        api_key_value=os.environ["HOPSWORKS_API_KEY"]
+        api_key_value=api_key_value
     )
+
     fs = project.get_feature_store()
 
-    # 3. Get or create feature group
-    fg = fs.get_or_create_feature_group(
-        name="air_quality_features",
-        version=1,
-        primary_key=["timestamp"],
-        description="Hourly air quality and weather features"
+    fg = fs.get_feature_group(
+        name="aqi_features",
+        version=1
     )
-    # 4. Insert data
-    fg.insert(df)
 
-    print("✅ Data successfully inserted into Hopsworks")
+    df = fetch_data()
+    fg.insert(df)
 
 if __name__ == "__main__":
     run_feature_pipeline()
