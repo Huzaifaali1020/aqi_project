@@ -1,10 +1,9 @@
-# manual trigger enabled
 name: Hourly Feature Pipeline
 
 on:
   schedule:
-    - cron: "0 * * * *"   # runs every hour (UTC)
-  workflow_dispatch:     # enables "Run workflow" button
+    - cron: "0 * * * *"
+  workflow_dispatch:
 
 jobs:
   feature_pipeline:
@@ -22,27 +21,25 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
+          pip install -r requirements.txt
 
       - name: Create config.yaml from secrets
         run: |
           mkdir -p config
-          cat <<'EOF' > config/config.yaml
+          cat <<EOF > config/config.yaml
           hopsworks:
-            api_key: "${HOPSWORKS_API_KEY}"
+            api_key: "${{ secrets.HOPSWORKS_API_KEY }}"
 
-          city: "Karachi"
+          city:
+            name: "Karachi"
+            lat: 24.8607
+            lon: 67.0011
 
           api:
-            aqi_url: "https://api.waqi.info/feed/karachi/"
-            aqi_key: "${AQI_API_KEY}"
             weather_url: "https://api.openweathermap.org/data/2.5/weather"
-            weather_key: "${WEATHER_API_KEY}"
+            air_pollution_url: "https://api.openweathermap.org/data/2.5/air_pollution"
+            weather_key: "${{ secrets.WEATHER_API_KEY }}"
           EOF
-        env:
-          HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
-          AQI_API_KEY: ${{ secrets.AQI_API_KEY }}
-          WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
 
       - name: Run ingestion + feature pipeline
         env:
