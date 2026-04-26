@@ -1,15 +1,17 @@
-# features/feature_view.py
 import hopsworks
-import yaml, os
+import yaml
+import os
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG_PATH = os.path.join(BASE_DIR, "config", "config.yaml")
 
-with open(CONFIG_PATH) as f:
+with open(CONFIG_PATH, "r") as f:
     config = yaml.safe_load(f)
 
 def create_feature_view():
-    project = hopsworks.login(api_key_value=config["hopsworks"]["api_key"])
+    project = hopsworks.login(
+        api_key_value=config["hopsworks"]["api_key"]
+    )
     fs = project.get_feature_store()
 
     fg = fs.get_feature_group(
@@ -21,11 +23,10 @@ def create_feature_view():
         name="aqi_features_fv",
         version=1,
         query=fg.select_all(),
-        event_time="timestamp",   # ✅ REQUIRED
-        description="AQI training feature view"
+        description="AQI feature view for training"
     )
 
-    print("✅ Feature View ready")
+    print("✅ Feature View created (or already exists)")
 
 if __name__ == "__main__":
     create_feature_view()
