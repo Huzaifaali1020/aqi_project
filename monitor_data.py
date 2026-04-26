@@ -21,7 +21,7 @@ def monitor_feature_group():
 
     # 4. Show stats
     print("\n==============================")
-    print("📊 FEATURE GROUP MONITOR")
+    print("FEATURE GROUP MONITOR")
     print("==============================")
     print(f"Total rows: {len(df)}")
     print("\nColumns:")

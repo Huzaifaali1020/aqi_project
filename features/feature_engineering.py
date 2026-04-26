@@ -16,7 +16,7 @@ def run_feature_pipeline():
 
     fs = project.get_feature_store()
 
-    # ✅ CREATE OR GET feature group (this is the missing part)
+
     fg = fs.get_or_create_feature_group(
         name="aqi_features",
         version=1,
@@ -29,7 +29,7 @@ def run_feature_pipeline():
     print(df)
 
     fg.insert(df)
-    print("✅ Data successfully inserted into Hopsworks")
+    print("Data successfully inserted into Hopsworks")
 
 if __name__ == "__main__":
     run_feature_pipeline()
