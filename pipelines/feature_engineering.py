@@ -2,6 +2,7 @@ import hopsworks
 import yaml
 import os
 from ingestion.fetch_data import fetch_data
+from features.transform_features import transform_features
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG_PATH = os.path.join(BASE_DIR, "config", "config.yaml")
@@ -25,6 +26,7 @@ def run_feature_pipeline():
     )
 
     df = fetch_data()
+    df = transform_features(df)
     print("Data fetched:")
     print(df)
 
