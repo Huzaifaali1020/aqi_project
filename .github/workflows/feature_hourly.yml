@@ -47,4 +47,4 @@ jobs:
           PYTHONPATH: .
         run: |
           python ingestion/fetch_data.py
-          python features/feature_engineering.py
+          python pipelines/feature_engineering.py
