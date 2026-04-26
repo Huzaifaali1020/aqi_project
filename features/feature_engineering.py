@@ -10,14 +10,18 @@ with open(CONFIG_PATH, "r") as f:
     config = yaml.safe_load(f)
 
 def run_feature_pipeline():
-    api_key_value = config["hopsworks"]["api_key"]
-
-    project = hopsworks.login(api_key_value=api_key_value)
+    project = hopsworks.login(
+        api_key_value=config["hopsworks"]["api_key"]
+    )
 
     fs = project.get_feature_store()
-    fg = fs.get_feature_group(
+
+    # ✅ CREATE OR GET feature group (this is the missing part)
+    fg = fs.get_or_create_feature_group(
         name="aqi_features",
-        version=1
+        version=1,
+        primary_key=["timestamp"],
+        description="Hourly air quality and weather features"
     )
 
     df = fetch_data()
