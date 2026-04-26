@@ -4,7 +4,7 @@ name: Hourly Feature Pipeline
 on:
   schedule:
     - cron: "0 * * * *"   # runs every hour (UTC)
-  workflow_dispatch:      # enables "Run workflow" button
+  workflow_dispatch:     # enables "Run workflow" button
 
 jobs:
   feature_pipeline:
@@ -27,13 +27,22 @@ jobs:
       - name: Create config.yaml from secrets
         run: |
           mkdir -p config
-          cat <<EOF > config/config.yaml
+          cat <<'EOF' > config/config.yaml
           hopsworks:
-            api_key: "${{ secrets.HOPSWORKS_API_KEY }}"
+            api_key: "${HOPSWORKS_API_KEY}"
+
+          city: "Karachi"
+
           api:
-            aqi_key: "${{ secrets.AQI_API_KEY }}"
-            weather_key: "${{ secrets.WEATHER_API_KEY }}"
+            aqi_url: "https://api.waqi.info/feed/karachi/"
+            aqi_key: "${AQI_API_KEY}"
+            weather_url: "https://api.openweathermap.org/data/2.5/weather"
+            weather_key: "${WEATHER_API_KEY}"
           EOF
+        env:
+          HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+          AQI_API_KEY: ${{ secrets.AQI_API_KEY }}
+          WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
 
       - name: Run ingestion + feature pipeline
         env:
