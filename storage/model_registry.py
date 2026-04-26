@@ -1,4 +1,3 @@
-# storage/model_registry.py
 import hopsworks
 import yaml
 import os
