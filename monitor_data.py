@@ -12,7 +12,7 @@ def monitor_feature_group():
 
     # 2. Get the feature group
     fg = fs.get_feature_group(
-        name="air_quality_features",
+        name="aqi_features",
         version=1
     )
 
