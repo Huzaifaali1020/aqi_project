@@ -1,3 +1,5 @@
+# manual trigger enabled
+
 name: Hourly Feature Pipeline
 
 on:
