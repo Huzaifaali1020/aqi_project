@@ -35,25 +35,27 @@ def fetch_data():
     ).json()
 
     # --------------------------------------------------
-    # Time handling (BEST PRACTICE)
+    # ✅ HOURLY TIME BUCKET (CRITICAL FIX)
     # --------------------------------------------------
-    # Epoch timestamp in milliseconds (PRIMARY KEY)
-    timestamp = int(datetime.now(tz=timezone.utc).timestamp() * 1000)
+    now_utc = datetime.now(timezone.utc)
 
-    # UTC datetime (for debugging)
-    event_time_utc = datetime.fromtimestamp(timestamp / 1000, tz=timezone.utc)
+    # 🔥 round DOWN to hour
+    hour_utc = now_utc.replace(minute=0, second=0, microsecond=0)
 
-    # Pakistan local time (human readable)
+    # epoch milliseconds (PRIMARY KEY)
+    timestamp = int(hour_utc.timestamp() * 1000)
+
+    # human-readable times
     pk_tz = pytz.timezone("Asia/Karachi")
-    event_time_pk = event_time_utc.astimezone(pk_tz)
+    event_time_pk = hour_utc.astimezone(pk_tz)
 
     # --------------------------------------------------
     # Return dataframe
     # --------------------------------------------------
     return pd.DataFrame([{
-        "timestamp": timestamp,                 # ✅ primary key (epoch ms)
-        "event_time_utc": event_time_utc,       # UTC datetime
-        "event_time_pk": event_time_pk,         # Pakistan local time
+        "timestamp": timestamp,           # ✅ PRIMARY KEY (hourly)
+        "event_time_utc": hour_utc,       # UTC hour
+        "event_time_pk": event_time_pk,   # Pakistan local hour
         "aqi": int(aqi_resp["data"]["aqi"]),
         "pm25": int(aqi_resp["data"]["iaqi"].get("pm25", {}).get("v", 0)),
         "pm10": int(aqi_resp["data"]["iaqi"].get("pm10", {}).get("v", 0)),
