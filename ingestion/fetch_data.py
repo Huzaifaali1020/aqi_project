@@ -1,7 +1,6 @@
 import requests
 import pandas as pd
 from datetime import datetime, timezone
-import pytz
 import os, yaml
 
 # --------------------------------------------------
@@ -35,26 +34,19 @@ def fetch_data():
     ).json()
 
     # --------------------------------------------------
-    # ✅ HOURLY TIME BUCKET (CRITICAL FIX)
+    # ✅ HOURLY UTC TIMESTAMP (PRIMARY KEY)
     # --------------------------------------------------
-    now_utc = datetime.now(timezone.utc)
+    hour_utc = datetime.now(timezone.utc).replace(
+        minute=0, second=0, microsecond=0
+    )
 
-    # 🔥 round DOWN to hour
-    hour_utc = now_utc.replace(minute=0, second=0, microsecond=0)
-
-    # epoch milliseconds (PRIMARY KEY)
-    timestamp = int(hour_utc.timestamp() * 1000)
     print("UTC Hour:", hour_utc)
-    print("Epoch timestamp (ms):", timestamp)
-    # human-readable times
-    pk_tz = pytz.timezone("Asia/Karachi")
-    event_time_pk = hour_utc.astimezone(pk_tz)
 
     # --------------------------------------------------
-    # Return dataframe
+    # Return dataframe (MATCHES FEATURE GROUP)
     # --------------------------------------------------
     return pd.DataFrame([{
-        "timestamp": timestamp,           # ✅ PRIMARY KEY (hourly)
+        "timestamp": hour_utc,   # ✅ TIMESTAMP (not bigint)
         "aqi": int(aqi_resp["data"]["aqi"]),
         "pm25": int(aqi_resp["data"]["iaqi"].get("pm25", {}).get("v", 0)),
         "pm10": int(aqi_resp["data"]["iaqi"].get("pm10", {}).get("v", 0)),
@@ -63,6 +55,7 @@ def fetch_data():
         "humidity": int(weather_resp["main"]["humidity"]),
         "wind": float(weather_resp["wind"]["speed"]),
     }])
+
 
 if __name__ == "__main__":
     df = fetch_data()
