@@ -25,11 +25,14 @@ def run_hourly_ingestion():
     fs = project.get_feature_store()
 
     # --------------------------------------------------
-    # RAW FEATURE GROUP (v1)
+    # RAW FEATURE GROUP (v1) — CREATE IF NOT EXISTS
     # --------------------------------------------------
-    fg_raw = fs.get_feature_group(
+    fg_raw = fs.get_or_create_feature_group(
         name="aqi_features",
-        version=1
+        version=1,
+        primary_key=["timestamp"],
+        description="Raw hourly air quality data from OpenWeather",
+        online_enabled=False
     )
 
     # --------------------------------------------------
@@ -39,7 +42,7 @@ def run_hourly_ingestion():
     print("📥 Inserting raw data:")
     print(df)
 
-    fg_raw.insert(df)
+    fg_raw.insert(df, write_options={"wait_for_job": True})
     print("✅ Raw data inserted into FG v1")
 
     # --------------------------------------------------
