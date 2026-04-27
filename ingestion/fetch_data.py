@@ -10,8 +10,8 @@ with open(CONFIG_PATH) as f:
     config = yaml.safe_load(f)
 
 def fetch_data():
-    lat = config["location"]["lat"]
-    lon = config["location"]["lon"]
+    lat = config["city"]["lat"]
+    lon = config["city"]["lon"]
     api_key = config["api"]["weather_key"]
 
     url = (

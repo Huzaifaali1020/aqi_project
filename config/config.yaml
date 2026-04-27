@@ -1,9 +1,19 @@
-api:
-  weather_key: "39b201e26d98485314a560495765b940"
-
-location:
+city:
+  name: Karachi
   lat: 24.8607
   lon: 67.0011
 
+api:
+  aqi_url: "https://api.waqi.info/feed/karachi/"
+  aqi_key: "YOUR_AQI_KEY"
+  weather_url: "https://api.openweathermap.org/data/2.5/weather"
+  weather_key: "YOUR_WEATHER_KEY"
+
 hopsworks:
-  api_key: "xPZvN12qyepFH78l.gGJQYiPQplzZA4jJmK2SyNTqRa4QF1oZ6wCGKz1SxJWXjWHYmLbMASLvMj0bxeZc"
+  api_key: "YOUR_HOPSWORKS_KEY"
+
+alerts:
+  aqi_threshold: 150
+  sender_email: "Huzaifa22.edu.pk@gmail.com"
+  sender_password: "APP_PASSWORD"
+  receiver_email: "z04669289@gmail.com"
