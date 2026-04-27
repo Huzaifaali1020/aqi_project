@@ -14,49 +14,40 @@ with open(CONFIG_PATH) as f:
 
 
 def fetch_data():
-    # --------------------------------------------------
-    # Fetch AQI data
-    # --------------------------------------------------
-    aqi_resp = requests.get(
-        f"{config['api']['aqi_url']}?token={config['api']['aqi_key']}"
-    ).json()
+    lat = config["location"]["lat"]
+    lon = config["location"]["lon"]
+    api_key = config["api"]["weather_key"]
 
-    # --------------------------------------------------
-    # Fetch Weather data
-    # --------------------------------------------------
-    weather_resp = requests.get(
-        config["api"]["weather_url"],
-        params={
-            "q": config["city"],
-            "appid": config["api"]["weather_key"],
-            "units": "metric"
-        }
-    ).json()
-
-    # --------------------------------------------------
-    # ✅ HOURLY UTC TIMESTAMP (PRIMARY KEY)
-    # --------------------------------------------------
-    hour_utc = datetime.now(timezone.utc).replace(
-        minute=0, second=0, microsecond=0
+    url = (
+        f"http://api.openweathermap.org/data/2.5/air_pollution"
+        f"?lat={lat}&lon={lon}&appid={api_key}"
     )
 
-    print("UTC Hour:", hour_utc)
+    response = requests.get(url).json()
+    record = response["list"][0]
 
-    # --------------------------------------------------
-    # Return dataframe (MATCHES FEATURE GROUP)
-    # --------------------------------------------------
-    return pd.DataFrame([{
-        "timestamp": hour_utc,   # ✅ TIMESTAMP (not bigint)
-        "aqi": int(aqi_resp["data"]["aqi"]),
-        "pm25": int(aqi_resp["data"]["iaqi"].get("pm25", {}).get("v", 0)),
-        "pm10": int(aqi_resp["data"]["iaqi"].get("pm10", {}).get("v", 0)),
-        "no2": int(aqi_resp["data"]["iaqi"].get("no2", {}).get("v", 0)),
-        "temp": float(weather_resp["main"]["temp"]),
-        "humidity": int(weather_resp["main"]["humidity"]),
-        "wind": float(weather_resp["wind"]["speed"]),
+    # Hourly UTC timestamp (rounded)
+    timestamp = datetime.fromtimestamp(
+        record["dt"], tz=timezone.utc
+    ).replace(minute=0, second=0, microsecond=0)
+
+    components = record["components"]
+
+    df = pd.DataFrame([{
+        "timestamp": timestamp,
+        "aqi": record["main"]["aqi"],   # AQI (1–5)
+        "co": float(components["co"]),
+        "no": float(components["no"]),
+        "no2": float(components["no2"]),
+        "o3": float(components["o3"]),
+        "pm10": float(components["pm10"]),
+        "pm25": float(components["pm2_5"]),
+        "so2": float(components["so2"]),
+        "nh3": int(components["nh3"])
     }])
+
+    return df
 
 
 if __name__ == "__main__":
-    df = fetch_data()
-    print(df)
+    print(fetch_data())
