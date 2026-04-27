@@ -2,13 +2,15 @@ import pandas as pd
 
 def transform_features(df: pd.DataFrame) -> pd.DataFrame:
     # ----------------------------
-    # Basic preprocessing
+    # Timestamp handling
     # ----------------------------
     df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
-    df = df.sort_values("timestamp")
+    df = df.sort_values("timestamp").reset_index(drop=True)
 
+    # ----------------------------
+    # Forward fill ONLY (no leakage)
+    # ----------------------------
     df.ffill(inplace=True)
-    df.bfill(inplace=True)
 
     # ----------------------------
     # Time-based features
@@ -31,19 +33,17 @@ def transform_features(df: pd.DataFrame) -> pd.DataFrame:
     # ----------------------------
     # Rolling features
     # ----------------------------
-    df["pm25_roll_3h"] = df["pm25"].rolling(3).mean()
-    df["pm25_roll_6h"] = df["pm25"].rolling(6).mean()
-
-    df["pm10_roll_3h"] = df["pm10"].rolling(3).mean()
+    df["pm25_roll_3h"] = df["pm25"].rolling(window=3, min_periods=1).mean()
+    df["pm25_roll_6h"] = df["pm25"].rolling(window=6, min_periods=1).mean()
+    df["pm10_roll_3h"] = df["pm10"].rolling(window=3, min_periods=1).mean()
 
     # ----------------------------
-    # Target (next hour AQI)
+    # Target variable
     # ----------------------------
     df["aqi_next_hour"] = df["aqi"].shift(-1)
 
     # ----------------------------
     # REQUIRED COLUMNS GUARANTEE
-    # (for training / inference safety)
     # ----------------------------
     required_cols = [
         "pm10_lag_1h",
@@ -56,9 +56,23 @@ def transform_features(df: pd.DataFrame) -> pd.DataFrame:
             df[col] = 0.0
 
     # ----------------------------
+    # Event / ingestion metadata
+    # ----------------------------
+    df["event_time"] = df["timestamp"]
+    df["ingestion_time"] = pd.Timestamp.utcnow()
+
+    # ----------------------------
     # Final cleanup
     # ----------------------------
-    df.dropna(inplace=True)
+    model_required = [
+        "pm25_lag_1h",
+        "pm25_lag_3h",
+        "pm10_lag_1h",
+        "pm10_lag_3h",
+        "aqi_next_hour"
+    ]
+
+    df.dropna(subset=model_required, inplace=True)
     df.reset_index(drop=True, inplace=True)
 
     return df
