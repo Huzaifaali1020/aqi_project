@@ -47,6 +47,7 @@ def run_feature_pipeline():
         name="aqi_features",
         version=2,
         primary_key=["timestamp"],
+        event_time="timestamp",
         description="Engineered AQI features",
         online_enabled=False
     )
