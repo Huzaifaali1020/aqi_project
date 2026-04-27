@@ -44,7 +44,8 @@ def fetch_data():
 
     # epoch milliseconds (PRIMARY KEY)
     timestamp = int(hour_utc.timestamp() * 1000)
-
+    print("UTC Hour:", hour_utc)
+    print("Epoch timestamp (ms):", timestamp)
     # human-readable times
     pk_tz = pytz.timezone("Asia/Karachi")
     event_time_pk = hour_utc.astimezone(pk_tz)
@@ -54,8 +55,6 @@ def fetch_data():
     # --------------------------------------------------
     return pd.DataFrame([{
         "timestamp": timestamp,           # ✅ PRIMARY KEY (hourly)
-        "event_time_utc": hour_utc,       # UTC hour
-        "event_time_pk": event_time_pk,   # Pakistan local hour
         "aqi": int(aqi_resp["data"]["aqi"]),
         "pm25": int(aqi_resp["data"]["iaqi"].get("pm25", {}).get("v", 0)),
         "pm10": int(aqi_resp["data"]["iaqi"].get("pm10", {}).get("v", 0)),
@@ -64,3 +63,7 @@ def fetch_data():
         "humidity": int(weather_resp["main"]["humidity"]),
         "wind": float(weather_resp["wind"]["speed"]),
     }])
+
+if __name__ == "__main__":
+    df = fetch_data()
+    print(df)
