@@ -5,12 +5,12 @@ city:
 
 api:
   aqi_url: "https://api.waqi.info/feed/karachi/"
-  aqi_key: "YOUR_AQI_KEY"
+  aqi_key: "5c8119e019240a0ca24b366f9a276b6baaabcb31"
   weather_url: "https://api.openweathermap.org/data/2.5/weather"
-  weather_key: "YOUR_WEATHER_KEY"
+  weather_key: "39b201e26d98485314a560495765b940"
 
 hopsworks:
-  api_key: "YOUR_HOPSWORKS_KEY"
+  api_key: "GJh2A4GzI7pr7lhh.CXvriR2G7NYp74YsodVBUhWiY0Zn86jpLFyGVcKxkf7xjvELQkAX2Nt1vH6MbDAV"
 
 alerts:
   aqi_threshold: 150
