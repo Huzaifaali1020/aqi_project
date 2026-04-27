@@ -2,7 +2,7 @@ name: Hourly Feature Pipeline
 
 on:
   schedule:
-    - cron: "0 * * * *"
+    - cron: "0 * * * *"   # runs every hour
   workflow_dispatch:
 
 jobs:
@@ -23,23 +23,26 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      # ✅ FIXED CONFIG STRUCTURE (MOST IMPORTANT STEP)
       - name: Create config.yaml from secrets
         run: |
           mkdir -p config
-          cat <<'EOF' > config/config.yaml
+          cat <<EOF > config/config.yaml
           hopsworks:
             api_key: "${{ secrets.HOPSWORKS_API_KEY }}"
 
-          city:
-            name: "Karachi"
+          location:
+            city: Karachi
             lat: 24.8607
             lon: 67.0011
 
           api:
-            aqi_url: "https://api.waqi.info/feed/karachi/"
-            aqi_key: "${{ secrets.AQI_API_KEY }}"
-            weather_url: "https://api.openweathermap.org/data/2.5/weather"
-            weather_key: "${{ secrets.WEATHER_API_KEY }}"
+            aqi:
+              url: "https://api.waqi.info/feed/karachi/"
+              key: "${{ secrets.AQI_API_KEY }}"
+            weather:
+              url: "https://api.openweathermap.org/data/2.5/weather"
+              key: "${{ secrets.WEATHER_API_KEY }}"
           EOF
 
       - name: Run ingestion + feature pipeline

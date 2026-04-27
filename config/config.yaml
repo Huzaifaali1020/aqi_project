@@ -1,7 +1,7 @@
-city: Karachi
 location:
   lat: 24.8607
   lon: 67.0011
+  city: Karachi
 api:
   aqi_url: "https://api.waqi.info/feed/karachi/"
   aqi_key: "5c8119e019240a0ca24b366f9a276b6baaabcb31"
