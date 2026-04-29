@@ -30,4 +30,5 @@ jobs:
         env:
           HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
         run: |
+          python training/create_training_data.py
           python training/train_and_register.py

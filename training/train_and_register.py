@@ -1,141 +1,254 @@
+import hopsworks
 import numpy as np
+import yaml
+import os
+import joblib
+import tempfile
 import time
+import matplotlib.pyplot as plt
+
 from sklearn.linear_model import Ridge
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from xgboost import XGBRegressor
-from sklearn.metrics import mean_squared_error
+from hsml.schema import Schema
+from hsml.model_schema import ModelSchema
 
-from storage.hopsworks_fs import read_features
-from storage.model_registry import save_model
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CONFIG_PATH = os.path.join(BASE_DIR, "config", "config.yaml")
 
-# --------------------------------------------------
-# Load data
-# --------------------------------------------------
-df = read_features()
+with open(CONFIG_PATH) as f:
+    config = yaml.safe_load(f)
 
-print(f"📊 Training data shape: {df.shape}")
-print(f"📊 Columns: {df.columns.tolist()}")
 
-MIN_ROWS = 10
-if len(df) < MIN_ROWS:
-    print(f"❌ Not enough data. Found {len(df)} rows, need {MIN_ROWS}.")
-    exit(0)
+def main():
+    # --------------------------------------------------
+    # Connect to Hopsworks
+    # --------------------------------------------------
+    project = hopsworks.login(
+        api_key_value=config["hopsworks"]["api_key"]
+    )
+    fs = project.get_feature_store()
+    mr = project.get_model_registry()
 
-# --------------------------------------------------
-# Clean bad rows
-# --------------------------------------------------
-df = df[(df["aqi"] > 5) & (df["aqi"] < 499)]
-df = df[(df["aqi_next_hour"] > 5) & (df["aqi_next_hour"] < 499)]
-df = df.reset_index(drop=True)
-print(f"📊 After cleaning: {len(df)} rows")
+    # --------------------------------------------------
+    # Load training data from Feature View (Option C)
+    # --------------------------------------------------
+    fv = fs.get_feature_view(
+        name="aqi_features_fv",
+        version=1
+    )
 
-# ── ADD THIS BLOCK HERE ──────────────────────
-print("\n🔍 LEAKAGE CHECK:")
-print(df[["timestamp", "aqi", "aqi_next_hour", "pm25_lag_1h", "pm25_roll_3h"]].head(10).to_string())
-print(f"\nCorrelation of pm25_lag_1h  with aqi_next_hour: {df['pm25_lag_1h'].corr(df['aqi_next_hour']):.4f}")
-print(f"Correlation of pm25_roll_3h with aqi_next_hour: {df['pm25_roll_3h'].corr(df['aqi_next_hour']):.4f}")
-print(f"Correlation of temp_lag_1h  with aqi_next_hour: {df['temp_lag_1h'].corr(df['aqi_next_hour']):.4f}")
-print(f"Correlation of wind_lag_1h  with aqi_next_hour: {df['wind_lag_1h'].corr(df['aqi_next_hour']):.4f}")
-print("──────────────────────────────────────────────\n")
-# --------------------------------------------------
-# Target & leakage columns
-# --------------------------------------------------
-TARGET = "aqi_next_hour"
+    print("📦 Loading training data from Feature View ...")
+    X_train, X_test, y_train, y_test = fv.get_train_test_split(
+        training_dataset_version=1
+    )
 
-LEAKAGE_COLS = [
-    "timestamp",
-    "aqi",
-    "co", "no", "no2", "o3", "so2", "nh3",
-    "pm10", "pm25",
-    "temperature", "humidity", "wind_speed", "pressure",
-    TARGET
-]
+    print(f"✅ Loaded training data")
+    print(f"🔹 X_train: {X_train.shape}")
+    print(f"🔹 X_test:  {X_test.shape}")
 
-cols_to_drop = [c for c in LEAKAGE_COLS if c in df.columns]
+    # --------------------------------------------------
+    # Flatten y to Series (Feature View returns DataFrame)
+    # --------------------------------------------------
+    y_train = y_train.squeeze()
+    y_test  = y_test.squeeze()
 
-# --------------------------------------------------
-# Split FIRST then drop leakage columns
-# --------------------------------------------------
-split_idx = int(len(df) * 0.8)
-train_df  = df.iloc[:split_idx].copy()
-test_df   = df.iloc[split_idx:].copy()
+    # --------------------------------------------------
+    # Clean bad rows
+    # --------------------------------------------------
+    train_mask = (y_train > 5) & (y_train < 499)
+    test_mask  = (y_test  > 5) & (y_test  < 499)
 
-X_train = train_df.drop(columns=cols_to_drop)
-y_train = train_df[TARGET]
+    X_train = X_train[train_mask].reset_index(drop=True)
+    y_train = y_train[train_mask].reset_index(drop=True)
+    X_test  = X_test[test_mask].reset_index(drop=True)
+    y_test  = y_test[test_mask].reset_index(drop=True)
 
-X_test  = test_df.drop(columns=cols_to_drop)
-y_test  = test_df[TARGET]
+    print(f"📊 After cleaning: train={len(X_train)}, test={len(X_test)}")
 
-print(f"✅ Features used for training: {X_train.columns.tolist()}")
-print(f"✅ Target: {TARGET}")
-print(f"🔹 Train size: {X_train.shape}")
-print(f"🔹 Test size:  {X_test.shape}")
+    # --------------------------------------------------
+    # Leakage check
+    # --------------------------------------------------
+    print("\n🔍 LEAKAGE CHECK:")
+    print(f"Correlation of pm25_lag_1h  with aqi_next_hour: "
+          f"{X_train['pm25_lag_1h'].corr(y_train):.4f}")
+    print(f"Correlation of temp_lag_1h  with aqi_next_hour: "
+          f"{X_train['temp_lag_1h'].corr(y_train):.4f}")
+    print(f"Correlation of wind_lag_1h  with aqi_next_hour: "
+          f"{X_train['wind_lag_1h'].corr(y_train):.4f}")
+    print("──────────────────────────────────────────────\n")
 
-# --------------------------------------------------
-# 3 Models
-# --------------------------------------------------
-models = {
-    "Ridge": Ridge(
-        alpha=1.0
-    ),
-    "RandomForest": RandomForestRegressor(
-        n_estimators=200,
-        random_state=42,
-        n_jobs=-1
-    ),
-    "XGBoost": XGBRegressor(
-        n_estimators=200,
-        learning_rate=0.05,
-        max_depth=6,
-        random_state=42,
-        n_jobs=-1,
-        verbosity=0
-    ),
-}
+    # --------------------------------------------------
+    # Drop leakage columns
+    # --------------------------------------------------
+    LEAKAGE_COLS = [
+        "timestamp",
+        "aqi",
+        "co", "no", "no2", "o3", "so2", "nh3",
+        "pm10", "pm25",
+        "temperature", "humidity", "wind_speed", "pressure",
+    ]
+    cols_to_drop = [c for c in LEAKAGE_COLS if c in X_train.columns]
+    X_train = X_train.drop(columns=cols_to_drop)
+    X_test  = X_test.drop(columns=cols_to_drop)
 
-# --------------------------------------------------
-# Train & Evaluate
-# --------------------------------------------------
-results = {}
+    print(f"✅ Features used: {X_train.columns.tolist()}")
+    print(f"🔹 Train size: {X_train.shape}")
+    print(f"🔹 Test size:  {X_test.shape}")
 
-for name, model in models.items():
-    print(f"\n🤖 Training {name} ...")
-    model.fit(X_train, y_train)
-    preds = model.predict(X_test)
-    rmse  = np.sqrt(mean_squared_error(y_test, preds))
-    results[name] = (rmse, model, preds)
-    print(f"📈 {name} RMSE: {rmse:.4f}")
+    # --------------------------------------------------
+    # 3 Models
+    # --------------------------------------------------
+    models = {
+        "Ridge": Ridge(alpha=1.0),
+        "RandomForest": RandomForestRegressor(
+            n_estimators=200,
+            random_state=42,
+            n_jobs=-1
+        ),
+        "XGBoost": XGBRegressor(
+            n_estimators=200,
+            learning_rate=0.05,
+            max_depth=6,
+            random_state=42,
+            n_jobs=-1,
+            verbosity=0
+        ),
+    }
 
-# --------------------------------------------------
-# Print comparison table
-# --------------------------------------------------
-print("\n--------------------------------------------------")
-print(f"{'Model':<20} {'RMSE':>10}")
-print("--------------------------------------------------")
-for name, (rmse, _, __) in sorted(results.items(), key=lambda x: x[1][0]):
-    marker = " ← best" if name == min(results, key=lambda x: results[x][0]) else ""
-    print(f"{name:<20} {rmse:>10.4f}{marker}")
-print("--------------------------------------------------")
+    # --------------------------------------------------
+    # Train & Evaluate
+    # --------------------------------------------------
+    results = {}
 
-# --------------------------------------------------
-# Select best model
-# --------------------------------------------------
-best_model_name             = min(results, key=lambda x: results[x][0])
-best_rmse, best_model, best_preds = results[best_model_name]
+    for name, model in models.items():
+        print(f"\n🤖 Training {name} ...")
+        model.fit(X_train, y_train)
+        preds = model.predict(X_test)
 
-print(f"\n🏆 Best model: {best_model_name} (RMSE: {best_rmse:.4f})")
+        rmse = np.sqrt(mean_squared_error(y_test, preds))
+        mae  = mean_absolute_error(y_test, preds)
+        r2   = r2_score(y_test, preds)
 
-# --------------------------------------------------
-# Save best model to Hopsworks
-# --------------------------------------------------
-save_model(
-    best_model,
-    rmse=best_rmse,
-    y_test=y_test,
-    y_pred=best_preds
-)
+        results[name] = {
+            "rmse":  rmse,
+            "mae":   mae,
+            "r2":    r2,
+            "model": model,
+            "preds": preds,
+        }
 
-print("--------------------------------------------------")
-print(f"✅ Best model: {best_model_name}")
-print(f"✅ Final RMSE: {best_rmse:.4f}")
-print("🎉 Model successfully registered without leakage")
+        print(f"📈 {name} — RMSE: {rmse:.4f}  MAE: {mae:.4f}  R²: {r2:.4f}")
+
+    # --------------------------------------------------
+    # Print comparison table
+    # --------------------------------------------------
+    print("\n" + "-" * 62)
+    print(f"{'Model':<20} {'RMSE':>8} {'MAE':>8} {'R²':>8}")
+    print("-" * 62)
+    for name, r in sorted(results.items(), key=lambda x: x[1]["rmse"]):
+        marker = " ← best" if name == min(
+            results, key=lambda x: results[x]["rmse"]) else ""
+        print(f"{name:<20} {r['rmse']:>8.4f} "
+              f"{r['mae']:>8.4f} {r['r2']:>8.4f}{marker}")
+    print("-" * 62)
+
+    # --------------------------------------------------
+    # Select best model
+    # --------------------------------------------------
+    best_name  = min(results, key=lambda x: results[x]["rmse"])
+    best       = results[best_name]
+    best_model = best["model"]
+    best_preds = best["preds"]
+    best_rmse  = best["rmse"]
+    best_mae   = best["mae"]
+    best_r2    = best["r2"]
+
+    print(f"\n🏆 Best model : {best_name}")
+    print(f"   RMSE       : {best_rmse:.4f}")
+    print(f"   MAE        : {best_mae:.4f}")
+    print(f"   R²         : {best_r2:.4f}")
+
+    # --------------------------------------------------
+    # Save model + plot + register with lineage
+    # --------------------------------------------------
+    MAX_RETRIES = 3
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            print(f"\n💾 Saving to Hopsworks (attempt {attempt}/{MAX_RETRIES}) ...")
+
+            with tempfile.TemporaryDirectory() as tmp_dir:
+
+                # ── Save model file ──────────────────────
+                model_path = os.path.join(tmp_dir, "model.pkl")
+                joblib.dump(best_model, model_path)
+
+                # ── Save evaluation plot ─────────────────
+                fig, ax = plt.subplots(figsize=(12, 4))
+                ax.plot(y_test.values, label="Actual AQI",
+                        color="steelblue", linewidth=1)
+                ax.plot(best_preds,    label="Predicted AQI",
+                        color="coral",  linewidth=1, linestyle="--")
+                ax.set_title(
+                    f"Actual vs Predicted AQI — {best_name} "
+                    f"(RMSE={best_rmse:.2f}, MAE={best_mae:.2f}, "
+                    f"R²={best_r2:.3f})"
+                )
+                ax.set_xlabel("Hour index (test set)")
+                ax.set_ylabel("AQI")
+                ax.legend()
+                plt.tight_layout()
+                plot_path = os.path.join(tmp_dir, "evaluation.png")
+                plt.savefig(plot_path)
+                plt.close()
+                print("📊 Evaluation plot saved")
+
+                # ── Model schema (correct Hopsworks format) ──
+                input_schema  = Schema(X_train)
+                output_schema = Schema(y_test)
+                model_schema  = ModelSchema(
+                    input_schema=input_schema,
+                    output_schema=output_schema
+                )
+
+                # ── Register with Feature View lineage ───
+                model_obj = mr.python.create_model(
+                    name="aqi_predictor",
+                    metrics={
+                        "rmse": round(float(best_rmse), 4),
+                        "mae":  round(float(best_mae),  4),
+                        "r2":   round(float(best_r2),   4),
+                    },
+                    model_schema=model_schema,
+                    feature_view=fv,
+                    training_dataset_version=1,
+                    description=(
+                        f"AQI 6h forecast — {best_name} "
+                        f"(RMSE={best_rmse:.2f})"
+                    )
+                )
+
+                model_obj.save(tmp_dir)
+
+            print("✅ Model successfully saved to Hopsworks Model Registry")
+            print("-" * 62)
+            print(f"✅ Best model : {best_name}")
+            print(f"✅ RMSE       : {best_rmse:.4f}")
+            print(f"✅ MAE        : {best_mae:.4f}")
+            print(f"✅ R²         : {best_r2:.4f}")
+            print("🎉 Model registered with full Feature View lineage")
+            return
+
+        except Exception as e:
+            print(f"⚠️ Attempt {attempt} failed: {e}")
+            if attempt < MAX_RETRIES:
+                print("🔄 Retrying in 15 seconds ...")
+                time.sleep(15)
+            else:
+                print("❌ All retries failed.")
+                raise
+
+
+if __name__ == "__main__":
+    main()
