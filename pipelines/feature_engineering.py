@@ -18,17 +18,19 @@ with open(CONFIG_PATH) as f:
 # --------------------------------------------------
 def transform_features(df: pd.DataFrame) -> pd.DataFrame:
 
+    # ── Timestamp handling ───────────────────────
     df["timestamp"] = pd.to_datetime(df["timestamp"])
     df = df.sort_values("timestamp").reset_index(drop=True)
 
+    # Forward fill missing sensor values
     df = df.ffill()
 
     # ── Time features ────────────────────────────
-    df["hour"]        = df["timestamp"].dt.hour
-    df["day"]         = df["timestamp"].dt.day
-    df["month"]       = df["timestamp"].dt.month
+    df["hour"] = df["timestamp"].dt.hour
+    df["day"] = df["timestamp"].dt.day
+    df["month"] = df["timestamp"].dt.month
     df["day_of_week"] = df["timestamp"].dt.dayofweek
-    df["is_weekend"]  = df["day_of_week"].isin([5, 6]).astype(int)
+    df["is_weekend"] = df["day_of_week"].isin([5, 6]).astype(int)
 
     # ── Pollution lag features ───────────────────
     df["pm25_lag_1h"] = df["pm25"].shift(1)
@@ -42,19 +44,19 @@ def transform_features(df: pd.DataFrame) -> pd.DataFrame:
     df["pm10_roll_3h"] = df["pm10"].rolling(3, min_periods=1).mean()
 
     # ── Weather lag features ─────────────────────
-    df["temp_lag_1h"]     = df["temperature"].shift(1)
+    df["temp_lag_1h"] = df["temperature"].shift(1)
     df["humidity_lag_1h"] = df["humidity"].shift(1)
-    df["wind_lag_1h"]     = df["wind_speed"].shift(1)
+    df["wind_lag_1h"] = df["wind_speed"].shift(1)
 
     # ── Weather rolling features ─────────────────
-    df["temp_roll_3h"]     = df["temperature"].rolling(3, min_periods=1).mean()
+    df["temp_roll_3h"] = df["temperature"].rolling(3, min_periods=1).mean()
     df["humidity_roll_3h"] = df["humidity"].rolling(3, min_periods=1).mean()
-    df["wind_roll_3h"]     = df["wind_speed"].rolling(3, min_periods=1).mean()
+    df["wind_roll_3h"] = df["wind_speed"].rolling(3, min_periods=1).mean()
 
-    # ── Target ───────────────────────────────────
-    df["aqi_next_hour"] = df["aqi"].shift(-6)
+    # ── Target (AQI next hour) ───────────────────
+    df["aqi_next_hour"] = df["aqi"].shift(-1)
 
-    # Drop rows where lag/target is NaN
+    # Drop rows with NaNs caused by lag/target
     df = df.dropna().reset_index(drop=True)
 
     return df
@@ -71,7 +73,7 @@ def run_feature_pipeline():
     )
     fs = project.get_feature_store()
 
-    # ── Read from v1: RAW FEATURES ───────────────
+    # ── Read RAW features (v1) ───────────────────
     fg_v1 = fs.get_or_create_feature_group(
         name="aqi_features",
         version=1,
@@ -83,14 +85,19 @@ def run_feature_pipeline():
     df_raw = fg_v1.read().sort_values("timestamp").reset_index(drop=True)
     print(f"📥 Read {len(df_raw)} rows from v1")
 
-    if len(df_raw) < 4:
-        print("⏳ Not enough data yet (need >= 4 rows)")
+    # Minimum rows needed: 3 lag + 1 target + buffer
+    if len(df_raw) < 5:
+        print("⏳ Not enough data yet (need >= 5 rows)")
         return
 
-    # ── Clean bad rows ───────────────────────────
+    # ── Clean bad AQI values ─────────────────────
     df_raw = df_raw[(df_raw["aqi"] > 5) & (df_raw["aqi"] < 499)]
     df_raw = df_raw.reset_index(drop=True)
     print(f"📥 After cleaning: {len(df_raw)} rows")
+
+    if len(df_raw) < 5:
+        print("⏳ Not enough clean data after filtering")
+        return
 
     # ── Feature engineering ──────────────────────
     df_fe = transform_features(df_raw)
@@ -99,17 +106,18 @@ def run_feature_pipeline():
         print("⚠️ Engineered DataFrame is empty — skipping insert")
         return
 
-    # Drop metadata columns not in v2 schema
+    # Drop metadata columns if present
     df_fe = df_fe.drop(
         columns=["event_time", "ingestion_time"],
         errors="ignore"
     )
 
-    print("📊 Engineered features sample:")
-    print(df_fe.tail())
-    print(f"\n📊 Columns: {df_fe.columns.tolist()}")
+    print("📊 Engineered features preview:")
+    print(df_fe.tail(25))
+    print(f"\n📊 Columns ({len(df_fe.columns)}):")
+    print(df_fe.columns.tolist())
 
-    # ── Insert into v2: ENGINEERED FEATURES ──────
+    # ── Insert ENGINEERED features (v2) ──────────
     fg_v2 = fs.get_or_create_feature_group(
         name="aqi_features",
         version=2,
