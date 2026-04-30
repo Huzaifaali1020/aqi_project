@@ -1,34 +1,31 @@
 import hopsworks
-import pandas as pd
+import yaml
 import os
 
-def monitor_feature_group():
-    # 1. Login to Hopsworks (uses API key from env variable)
-    project = hopsworks.login(
-        api_key_value=os.environ.get("HOPSWORKS_API_KEY")
-    )
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CONFIG_PATH = os.path.join(BASE_DIR, "config", "config.yaml")
 
-    fs = project.get_feature_store()
+with open(CONFIG_PATH) as f:
+    config = yaml.safe_load(f)
 
-    # 2. Get the feature group
-    fg = fs.get_feature_group(
-        name="aqi_features",
-        version=2
-    )
+project = hopsworks.login(api_key_value=config["hopsworks"]["api_key"])
+fs = project.get_feature_store()
 
-    # 3. Read all data
-    df = fg.read()
+# ── Check v1 (raw) ──────────────────────────────
+fg_v1 = fs.get_feature_group(name="aqi_features", version=1)
+df_v1 = fg_v1.read()
+print(f"📊 v1 raw rows:        {len(df_v1)}")
+print(f"📅 v1 latest timestamp: {df_v1['timestamp'].max()}")
+print(f"📅 v1 oldest timestamp: {df_v1['timestamp'].min()}")
 
-    # 4. Show stats
-    print("\n==============================")
-    print("FEATURE GROUP MONITOR")
-    print("==============================")
-    print(f"Total rows: {len(df)}")
-    print("\nColumns:")
-    print(df.columns.tolist())
+# ── Check v2 (engineered) ───────────────────────
+fg_v2 = fs.get_feature_group(name="aqi_features", version=2)
+df_v2 = fg_v2.read()
+print(f"\n📊 v2 engineered rows:  {len(df_v2)}")
+print(f"📅 v2 latest timestamp: {df_v2['timestamp'].max()}")
+print(f"📅 v2 oldest timestamp: {df_v2['timestamp'].min()}")
 
-    print("\nData preview:")
-    print(df)
-
-if __name__ == "__main__":
-    monitor_feature_group()
+# ── AQI stats ───────────────────────────────────
+print(f"\n📈 AQI min:  {df_v1['aqi'].min()}")
+print(f"📈 AQI max:  {df_v1['aqi'].max()}")
+print(f"📈 AQI mean: {df_v1['aqi'].mean():.1f}")
