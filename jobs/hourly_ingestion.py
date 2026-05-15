@@ -1,5 +1,4 @@
 import hopsworks
-import pandas as pd
 import yaml
 import os
 
@@ -16,12 +15,16 @@ with open(CONFIG_PATH) as f:
     config = yaml.safe_load(f)
 
 
+# --------------------------------------------------
+# Hourly ingestion pipeline
+# --------------------------------------------------
 def run_hourly_ingestion():
     project = hopsworks.login(
         api_key_value=config["hopsworks"]["api_key"]
     )
     fs = project.get_feature_store()
 
+    # Raw feature group (SOURCE OF TRUTH)
     fg_raw = fs.get_or_create_feature_group(
         name="aqi_features",
         version=1,
@@ -31,28 +34,18 @@ def run_hourly_ingestion():
     )
 
     df = fetch_data()
-    if df is None:
+
+    if df is None or df.empty:
         print("⚠️ No data fetched")
         return
 
-    new_timestamp = df["timestamp"].iloc[0]
-
-    # ── Skip if already exists ───────────────────
-    try:
-        existing = fg_raw.read()
-        existing["timestamp"] = pd.to_datetime(existing["timestamp"], utc=True)
-        if new_timestamp in existing["timestamp"].values:
-            print(f"⚠️ {new_timestamp} already exists — skipping")
-            return
-    except Exception:
-        pass
-
-    print(f"📥 Inserting new row for {new_timestamp}")
+    print(f"📥 Inserting raw data for {df['timestamp'].iloc[0]}")
     fg_raw.insert(df, write_options={"wait_for_job": True})
-    print("✅ Raw data inserted into v1")
+    print("✅ Raw data inserted into aqi_features v1")
 
+    # Run feature engineering AFTER raw ingestion
     run_feature_pipeline()
-    print("⚙️ Feature engineering completed")
+    print("⚙️ Feature engineering completed successfully")
 
 
 if __name__ == "__main__":

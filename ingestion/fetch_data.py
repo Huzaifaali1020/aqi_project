@@ -4,6 +4,9 @@ from datetime import datetime, timezone
 import os
 import yaml
 
+# --------------------------------------------------
+# Load config
+# --------------------------------------------------
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG_PATH = os.path.join(BASE_DIR, "config", "config.yaml")
 
@@ -11,6 +14,9 @@ with open(CONFIG_PATH) as f:
     config = yaml.safe_load(f)
 
 
+# --------------------------------------------------
+# PM2.5 → AQI conversion
+# --------------------------------------------------
 def pm25_to_aqi(pm25: float) -> int:
     breakpoints = [
         (0.0,   12.0,    0,  50),
@@ -29,15 +35,19 @@ def pm25_to_aqi(pm25: float) -> int:
     return 500
 
 
+# --------------------------------------------------
+# Fetch current weather (Open-Meteo)
+# --------------------------------------------------
 def fetch_current_weather(lat: float, lon: float) -> dict:
-    """Fetch current weather from Open-Meteo — completely free, no API key"""
     url = (
         f"https://api.open-meteo.com/v1/forecast"
         f"?latitude={lat}&longitude={lon}"
-        f"&current=temperature_2m,relativehumidity_2m,windspeed_10m,surface_pressure"
+        f"&current=temperature_2m,relativehumidity_2m,"
+        f"windspeed_10m,surface_pressure"
         f"&timezone=UTC"
     )
-    response = requests.get(url).json()
+
+    response = requests.get(url, timeout=30).json()
 
     if "current" not in response:
         print(f"⚠️ Open-Meteo error: {response}")
@@ -57,37 +67,30 @@ def fetch_current_weather(lat: float, lon: float) -> dict:
     }
 
 
-def fetch_data():
+# --------------------------------------------------
+# Fetch air quality + weather
+# --------------------------------------------------
+def fetch_data() -> pd.DataFrame:
     lat     = config["city"]["lat"]
     lon     = config["city"]["lon"]
     api_key = config["api"]["weather_key"]
 
-    # ── 1. Air pollution from OpenWeather ────────
     pollution_url = (
         f"http://api.openweathermap.org/data/2.5/air_pollution"
         f"?lat={lat}&lon={lon}&appid={api_key}"
     )
-    pollution_resp = requests.get(pollution_url).json()
-    record         = pollution_resp["list"][0]
-    components     = record["components"]
 
-    # wall-clock timestamp — never repeats
-    timestamp = datetime.now(tz=timezone.utc).replace(
-        minute=0, second=0, microsecond=0
-    )
+    pollution_resp = requests.get(pollution_url, timeout=30).json()
+    record     = pollution_resp["list"][0]
+    components = record["components"]
+
+    # IMPORTANT: Unique timestamp (no rounding)
+    timestamp = datetime.now(tz=timezone.utc)
 
     pm25     = float(components["pm2_5"])
     real_aqi = pm25_to_aqi(pm25)
 
-    # ── 2. Weather from Open-Meteo (free) ────────
     weather = fetch_current_weather(lat, lon)
-
-    print(f"📍 timestamp  : {timestamp}")
-    print(f"📍 pm25={pm25} → AQI={real_aqi}")
-    print(f"🌡️  temp={weather['temperature']}°C  "
-          f"humidity={weather['humidity']}%  "
-          f"wind={weather['wind_speed']}m/s  "
-          f"pressure={weather['pressure']}hPa")
 
     df = pd.DataFrame([{
         "timestamp":   timestamp,
@@ -110,4 +113,5 @@ def fetch_data():
 
 
 if __name__ == "__main__":
-    print(fetch_data())
+    df = fetch_data()
+    print(df)
