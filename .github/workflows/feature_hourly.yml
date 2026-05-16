@@ -2,7 +2,7 @@ name: Hourly Feature Pipeline
 
 on:
   schedule:
-    - cron: "0 * * * *"   # runs every hour
+    - cron: "0 * * * *"
   workflow_dispatch:
 
 jobs:
@@ -23,7 +23,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # ✅ CONFIG FILE (MATCHES PYTHON EXACTLY)
       - name: Create config.yaml from secrets
         run: |
           mkdir -p config
@@ -53,5 +52,4 @@ jobs:
         env:
           PYTHONPATH: .
         run: |
-          python ingestion/fetch_data.py
-          python pipelines/feature_engineering.py
+          python jobs/hourly_ingestion.py    # ← changed to this
