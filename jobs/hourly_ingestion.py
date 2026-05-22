@@ -14,14 +14,22 @@ CONFIG_PATH = os.path.join(BASE_DIR, "config", "config.yaml")
 with open(CONFIG_PATH) as f:
     config = yaml.safe_load(f)
 
+print("CONFIG:", config)
 
 # --------------------------------------------------
 # Hourly ingestion pipeline
 # --------------------------------------------------
 def run_hourly_ingestion():
+    hops_config = config.get("hopsworks", {})
+    host = hops_config.get("host")
+    api_key = hops_config.get("api_key")
+
+    if not host or not api_key:
+        raise ValueError("Missing hopsworks config in YAML")
+
     project = hopsworks.login(
-        host=config["hopsworks"]["host"],
-        api_key_value=config["hopsworks"]["api_key"]
+        host=host,
+        api_key_value=api_key
     )
     fs = project.get_feature_store()
 
