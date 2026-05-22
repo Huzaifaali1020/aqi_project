@@ -133,10 +133,20 @@ def run_feature_pipeline():
         online_enabled=False
     )
 
+
+    # Insert only newest engineered row
+    latest_row = df_fe.tail(1)
+
+    print("📤 Uploading latest engineered row:")
+    print(latest_row)
+
     fg_v2.insert(
-        df_fe,
+        latest_row,
         write_options={"wait_for_job": True}
     )
+
+    print(fg_v2.materialization_job.get_state())
+
 
     print("✅ Feature engineering pipeline completed successfully")
 
