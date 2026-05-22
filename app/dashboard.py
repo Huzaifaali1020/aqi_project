@@ -74,7 +74,10 @@ def load_forecast():
 
 @st.cache_data(ttl=3600)
 def load_current_conditions():
-    project = hopsworks.login(api_key_value=config["hopsworks"]["api_key"])
+    project = hopsworks.login(
+        host="eu-west.cloud.hopsworks.ai",
+        api_key_value=config["hopsworks"]["api_key"]
+    )
     fs = project.get_feature_store()
     fv = fs.get_feature_view("aqi_features_fv", version=1)
     df = fv.get_batch_data().sort_values("timestamp")
