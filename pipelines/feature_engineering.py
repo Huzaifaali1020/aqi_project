@@ -2,7 +2,7 @@ import hopsworks
 import pandas as pd
 import yaml
 import os
-
+import time
 # --------------------------------------------------
 # Load config.yaml
 # --------------------------------------------------
@@ -135,7 +135,20 @@ def run_feature_pipeline():
     fg_v2.insert(latest_row)
 
     # ---------------- SAFE MATERIALIZATION (FIX) ----------------
-    safe_materialize(fg_v2)
+    #safe_materialize(fg_v2)
+
+    #while True:
+        #state = fg_v2.materialization_job.get_state()
+        #print("📡 Materialization state:", state)
+
+        #if state == "FINISHED":
+         #   print("✅ Materialization completed")
+          #  break
+
+        #if state in ["FAILED", "KILLED"]:
+         #   raise Exception(f"❌ Materialization failed: {state}")
+
+        #time.sleep(10)
 
     # ---------------- VERIFY ----------------
     df_check = fg_v2.read()
