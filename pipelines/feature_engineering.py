@@ -75,6 +75,7 @@ def run_feature_pipeline():
     print("🚀 Starting feature engineering pipeline")
 
     project = hopsworks.login(
+        host="eu-west.cloud.hopsworks.ai",
         api_key_value=config["hopsworks"]["api_key"]
     )
     fs = project.get_feature_store()
