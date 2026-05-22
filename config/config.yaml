@@ -11,7 +11,7 @@ api:
 
 hopsworks:
   api_key: "GJh2A4GzI7pr7lhh.CXvriR2G7NYp74YsodVBUhWiY0Zn86jpLFyGVcKxkf7xjvELQkAX2Nt1vH6MbDAV"
-  host: "https://eu-west.cloud.hopsworks.ai"
+  host: "eu-west.cloud.hopsworks.ai"
 
 alerts:
   aqi_threshold: 150
