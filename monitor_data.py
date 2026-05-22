@@ -8,7 +8,10 @@ CONFIG_PATH = os.path.join(BASE_DIR, "config", "config.yaml")
 with open(CONFIG_PATH) as f:
     config = yaml.safe_load(f)
 
-project = hopsworks.login(api_key_value=config["hopsworks"]["api_key"])
+project = hopsworks.login(
+    host=config["hopsworks"]["host"],
+    api_key_value=config["hopsworks"]["api_key"]
+)
 fs = project.get_feature_store()
 
 # ── Check v1 (raw) ──────────────────────────────

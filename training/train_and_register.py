@@ -26,6 +26,7 @@ def main():
     # Connect to Hopsworks
     # --------------------------------------------------
     project = hopsworks.login(
+        host=config["hopsworks"]["host"],
         api_key_value=config["hopsworks"]["api_key"]
     )
     fs = project.get_feature_store()

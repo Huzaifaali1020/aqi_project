@@ -15,7 +15,9 @@ with open(CONFIG_PATH) as f:
 
 def backfill(days=30):
     project = hopsworks.login(
+        host=config["hopsworks"]["host"],
         api_key_value=config["hopsworks"]["api_key"]
+
     )
     fs = project.get_feature_store()
 

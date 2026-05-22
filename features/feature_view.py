@@ -11,7 +11,9 @@ with open(CONFIG_PATH, "r") as f:
 
 def create_feature_view():
     project = hopsworks.login(
+        host=config["hopsworks"]["host"],
         api_key_value=config["hopsworks"]["api_key"]
+
     )
     fs = project.get_feature_store()
 

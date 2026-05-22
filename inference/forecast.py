@@ -221,7 +221,10 @@ def aggregate_to_3_days(df):
 def run_forecast():
     print("🚀 Starting AQI forecast pipeline\n")
 
-    project = hopsworks.login(api_key_value=config["hopsworks"]["api_key"])
+    project = hopsworks.login(
+        host=config["hopsworks"]["host"],
+        api_key_value=config["hopsworks"]["api_key"]
+    )
     model = load_model(project)
     df = load_latest_features(project)
 

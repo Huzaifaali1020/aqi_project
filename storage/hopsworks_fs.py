@@ -10,7 +10,10 @@ with open(CONFIG_PATH, "r") as f:
 
 
 def read_features():
-    project = hopsworks.login(api_key_value=config["hopsworks"]["api_key"])
+    project = hopsworks.login(
+        host=config["hopsworks"]["host"],
+        api_key_value=config["hopsworks"]["api_key"]
+    )
     fs = project.get_feature_store()
 
     fv = fs.get_feature_view(

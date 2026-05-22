@@ -11,6 +11,7 @@ with open(CONFIG_PATH) as f:
 
 def create_training_data():
     project = hopsworks.login(
+        host=config["hopsworks"]["host"],
         api_key_value=config["hopsworks"]["api_key"]
     )
     fs = project.get_feature_store()

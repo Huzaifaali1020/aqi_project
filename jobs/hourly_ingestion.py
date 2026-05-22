@@ -20,7 +20,7 @@ with open(CONFIG_PATH) as f:
 # --------------------------------------------------
 def run_hourly_ingestion():
     project = hopsworks.login(
-        host="eu-west.cloud.hopsworks.ai",
+        host=config["hopsworks"]["host"],
         api_key_value=config["hopsworks"]["api_key"]
     )
     fs = project.get_feature_store()
