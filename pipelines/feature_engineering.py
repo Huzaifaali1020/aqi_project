@@ -136,7 +136,7 @@ def run_feature_pipeline():
 
 
     # Insert only newest engineered row
-    latest_row = df_fe.tail(1)
+    latest_row = df_fe.dropna(subset=["aqi_next_hour"]).tail(1)
 
     print("📤 Uploading latest engineered row:")
     print(latest_row)
