@@ -54,7 +54,7 @@ def transform_features(df: pd.DataFrame) -> pd.DataFrame:
     df["wind_roll_3h"] = df["wind_speed"].rolling(3, min_periods=1).mean()
 
     # ── Target (AQI next hour) ───────────────────
-    # df["aqi_next_hour"] = df["aqi"].shift(-1)
+    df["aqi_next_hour"] = df["aqi"].shift(-1)
 
     # Drop rows with NaNs caused by lag/target
     #df = df.dropna().reset_index(drop=True)
