@@ -10,8 +10,9 @@ api:
   weather_key: "39b201e26d98485314a560495765b940"
 
 hopsworks:
-  api_key: "GJh2A4GzI7pr7lhh.CXvriR2G7NYp74YsodVBUhWiY0Zn86jpLFyGVcKxkf7xjvELQkAX2Nt1vH6MbDAV"
   host: "eu-west.cloud.hopsworks.ai"
+  api_key: "GJh2A4GzI7pr7lhh.CXvriR2G7NYp74YsodVBUhWiY0Zn86jpLFyGVcKxkf7xjvELQkAX2Nt1vH6MbDAV"
+
 
 alerts:
   aqi_threshold: 150
