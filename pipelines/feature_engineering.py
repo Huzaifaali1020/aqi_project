@@ -117,14 +117,13 @@ def run_feature_pipeline():
         name="aqi_features",
         version=2,
         primary_key=["timestamp"],
-        event_time="timestamp",
         online_enabled=False
     )
 
     print("📤 Inserting into v2 (waiting for job to finish)...")
     fg_v2.insert(
         df_fe,
-        write_options={"wait_for_job": True}   # ← KEY FIX
+        write_options={"wait_for_job": False}   # ← KEY FIX
     )
 
     print("✅ Feature engineering pipeline completed successfully")
