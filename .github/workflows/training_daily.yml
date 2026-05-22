@@ -28,6 +28,7 @@ jobs:
 
       - name: Train and register model
         env:
+          host: "eu-west.cloud.hopsworks.ai"
           HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
         run: |
           python training/create_training_data.py

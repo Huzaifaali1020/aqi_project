@@ -39,6 +39,7 @@ jobs:
             weather_key: "${{ secrets.WEATHER_API_KEY }}"
 
           hopsworks:
+            host: "eu-west.cloud.hopsworks.ai"
             api_key: "${{ secrets.HOPSWORKS_API_KEY }}"
 
           alerts:
