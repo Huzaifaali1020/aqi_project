@@ -54,10 +54,16 @@ def transform_features(df: pd.DataFrame) -> pd.DataFrame:
     df["wind_roll_3h"] = df["wind_speed"].rolling(3, min_periods=1).mean()
 
     # ── Target (AQI next hour) ───────────────────
-    df["aqi_next_hour"] = df["aqi"].shift(-1)
+    # df["aqi_next_hour"] = df["aqi"].shift(-1)
 
     # Drop rows with NaNs caused by lag/target
-    df = df.dropna().reset_index(drop=True)
+    #df = df.dropna().reset_index(drop=True)
+    df = df.dropna(subset=[
+        "pm25_lag_1h",
+        "pm25_lag_3h",
+        "pm10_lag_1h",
+        "pm10_lag_3h"
+    ]).reset_index(drop=True)
 
     return df
 
@@ -78,6 +84,7 @@ def run_feature_pipeline():
         name="aqi_features",
         version=1,
         primary_key=["timestamp"],
+        event_time="timestamp",
         description="Raw hourly air quality + weather data",
         online_enabled=False
     )

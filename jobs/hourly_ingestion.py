@@ -29,6 +29,7 @@ def run_hourly_ingestion():
         name="aqi_features",
         version=1,
         primary_key=["timestamp"],
+        event_time="timestamp",
         description="Raw hourly air quality + weather data",
         online_enabled=False
     )
