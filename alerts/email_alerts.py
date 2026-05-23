@@ -1,21 +1,177 @@
-import smtplib, yaml
+import smtplib
+import requests
+import yaml
+import os
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from datetime import datetime
+import pytz
 
-with open("config/config.yaml") as f:
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CONFIG_PATH = os.path.join(BASE_DIR, "config", "config.yaml")
+
+with open(CONFIG_PATH) as f:
     config = yaml.safe_load(f)
 
-def send_alert(aqi):
-    if aqi < config["alerts"]["aqi_threshold"]:
-        return
+PK_TZ = pytz.timezone("Asia/Karachi")
 
-    server = smtplib.SMTP("smtp.gmail.com", 587)
-    server.starttls()
-    server.login(
-        config["alerts"]["sender_email"],
-        config["alerts"]["sender_password"]
+
+# --------------------------------------------------
+# AQI category
+# --------------------------------------------------
+def aqi_category(aqi: float) -> tuple:
+    if aqi <= 50:
+        return "Good", "🟢"
+    elif aqi <= 100:
+        return "Moderate", "🟡"
+    elif aqi <= 150:
+        return "Unhealthy for Sensitive Groups", "🟠"
+    elif aqi <= 200:
+        return "Unhealthy", "🔴"
+    elif aqi <= 300:
+        return "Very Unhealthy", "🟣"
+    else:
+        return "Hazardous", "⚫"
+
+
+# --------------------------------------------------
+# Get current AQI
+# --------------------------------------------------
+def get_current_aqi() -> float:
+    lat     = config["city"]["lat"]
+    lon     = config["city"]["lon"]
+    api_key = config["api"]["weather_key"]
+
+    url = (
+        f"http://api.openweathermap.org/data/2.5/air_pollution"
+        f"?lat={lat}&lon={lon}&appid={api_key}"
     )
-    server.sendmail(
-        config["alerts"]["sender_email"],
-        config["alerts"]["receiver_email"],
-        f"⚠ AQI ALERT: AQI reached {aqi}"
-    )
-    server.quit()
+    response   = requests.get(url).json()
+    components = response["list"][0]["components"]
+    pm25       = float(components["pm2_5"])
+
+    breakpoints = [
+        (0.0,   12.0,    0,  50),
+        (12.1,  35.4,   51, 100),
+        (35.5,  55.4,  101, 150),
+        (55.5,  150.4, 151, 200),
+        (150.5, 250.4, 201, 300),
+        (250.5, 350.4, 301, 400),
+        (350.5, 500.4, 401, 500),
+    ]
+    for bp_lo, bp_hi, aqi_lo, aqi_hi in breakpoints:
+        if bp_lo <= pm25 <= bp_hi:
+            return round(
+                (aqi_hi - aqi_lo) / (bp_hi - bp_lo) * (pm25 - bp_lo) + aqi_lo
+            )
+    return 500
+
+
+# --------------------------------------------------
+# Send email alert
+# --------------------------------------------------
+def send_alert(aqi: float):
+    category, emoji = aqi_category(aqi)
+    now_pk          = datetime.now(PK_TZ)
+
+    sender_email    = config["alerts"]["sender_email"]
+    sender_password = config["alerts"]["sender_password"]
+    receiver_email  = config["alerts"]["receiver_email"]
+
+    subject = f"⚠️ AQI Alert — Karachi | {emoji} {category} ({aqi:.0f})"
+
+    body = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; background: #1a1a2e; color: white; padding: 20px;">
+
+        <div style="max-width: 600px; margin: auto; background: #16213e;
+                    border-radius: 12px; padding: 30px;">
+
+            <h2 style="color: #e74c3c;">⚠️ Air Quality Alert — Karachi</h2>
+
+            <div style="background: #0f3460; border-radius: 8px; padding: 20px;
+                        text-align: center; margin: 20px 0;">
+                <h1 style="font-size: 64px; margin: 0;">{emoji}</h1>
+                <h1 style="color: #e74c3c; font-size: 48px; margin: 10px 0;">{aqi:.0f}</h1>
+                <h3 style="color: #ccc;">{category}</h3>
+            </div>
+
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 8px; color: #aaa;">📍 Location</td>
+                    <td style="padding: 8px;">Karachi, Pakistan</td>
+                </tr>
+                <tr style="background: #0f3460;">
+                    <td style="padding: 8px; color: #aaa;">🕒 Time (PKT)</td>
+                    <td style="padding: 8px;">{now_pk:%Y-%m-%d %H:%M}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; color: #aaa;">📊 AQI Value</td>
+                    <td style="padding: 8px;">{aqi:.0f}</td>
+                </tr>
+                <tr style="background: #0f3460;">
+                    <td style="padding: 8px; color: #aaa;">🏷️ Category</td>
+                    <td style="padding: 8px;">{category}</td>
+                </tr>
+            </table>
+
+            <div style="background: #e74c3c22; border: 1px solid #e74c3c;
+                        border-radius: 8px; padding: 15px; margin: 20px 0;">
+                <h4 style="color: #e74c3c; margin: 0 0 10px 0;">⚕️ Health Recommendations</h4>
+                <ul style="color: #ccc; margin: 0; padding-left: 20px;">
+                    {"<li>Everyone should avoid outdoor activities</li>" if aqi > 200 else ""}
+                    {"<li>Sensitive groups should stay indoors</li>" if aqi > 150 else ""}
+                    <li>Wear N95 masks if going outside</li>
+                    <li>Keep windows closed</li>
+                    <li>Use air purifiers indoors</li>
+                </ul>
+            </div>
+
+            <p style="color: #666; font-size: 12px; text-align: center;">
+                This alert was automatically generated by the Karachi AQI Prediction System.<br>
+                AQI threshold: {config['alerts']['aqi_threshold']}
+            </p>
+        </div>
+    </body>
+    </html>
+    """
+
+    msg                    = MIMEMultipart("alternative")
+    msg["Subject"]         = subject
+    msg["From"]            = sender_email
+    msg["To"]              = receiver_email
+    msg.attach(MIMEText(body, "html"))
+
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(sender_email, sender_password)
+            server.sendmail(sender_email, receiver_email, msg.as_string())
+        print(f"✅ Alert email sent: AQI {aqi:.0f} — {category}")
+    except Exception as e:
+        print(f"❌ Email failed: {e}")
+
+
+# --------------------------------------------------
+# Main — check and alert
+# --------------------------------------------------
+def check_and_alert():
+    threshold = config["alerts"]["aqi_threshold"]
+    print(f"🔍 Checking AQI (threshold: {threshold}) ...")
+
+    try:
+        current_aqi = get_current_aqi()
+        category, emoji = aqi_category(current_aqi)
+        print(f"📍 Current AQI: {current_aqi:.0f} {emoji} {category}")
+
+        if current_aqi >= threshold:
+            print(f"⚠️ AQI {current_aqi:.0f} exceeds threshold {threshold} — sending alert")
+            send_alert(current_aqi)
+        else:
+            print(f"✅ AQI {current_aqi:.0f} is below threshold {threshold} — no alert needed")
+
+    except Exception as e:
+        print(f"❌ Error checking AQI: {e}")
+
+
+if __name__ == "__main__":
+    check_and_alert()
