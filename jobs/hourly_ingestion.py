@@ -64,7 +64,7 @@ def run_hourly_ingestion():
     print(f"📥 Inserting raw data for {new_timestamp}")
     fg_raw.insert(
         df,
-        write_options={"wait_for_job": False}   # ← KEY FIX
+        write_options={"wait_for_job": True}   # ← KEY FIX
     )
     print("✅ Raw data inserted into aqi_features v1")
     df_check = fg_raw.read()
