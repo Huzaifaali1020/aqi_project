@@ -68,6 +68,7 @@ def run_hourly_ingestion():
     )
     print("✅ Raw data inserted into aqi_features v1")
     df_check = fg_raw.read()
+    print(df["timestamp"].max())
 
     print(df_check.tail())
     print(df_check.shape)
