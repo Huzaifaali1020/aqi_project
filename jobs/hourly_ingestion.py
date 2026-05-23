@@ -67,6 +67,10 @@ def run_hourly_ingestion():
         write_options={"wait_for_job": False}   # ← KEY FIX
     )
     print("✅ Raw data inserted into aqi_features v1")
+    df_check = fg_raw.read()
+
+    print(df_check.tail())
+    print(df_check.shape)
 
     # ── Feature engineering ──────────────────────
     run_feature_pipeline()

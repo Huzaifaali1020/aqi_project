@@ -47,7 +47,7 @@ def transform_features(df: pd.DataFrame) -> pd.DataFrame:
     df["humidity_roll_3h"] = df["humidity"].rolling(3, min_periods=1).mean()
     df["wind_roll_3h"]     = df["wind_speed"].rolling(3, min_periods=1).mean()
 
-    df["aqi_next_hour"] = df["aqi"].shift(-6)
+    df["aqi_next_hour"] = df["aqi"].shift(-1)
 
     df = df.dropna(subset=[
         "pm25_lag_1h",
