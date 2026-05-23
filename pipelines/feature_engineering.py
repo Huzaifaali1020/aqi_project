@@ -120,8 +120,9 @@ def run_feature_pipeline():
     )
 
     print("📤 Inserting into v2 (waiting for job to finish)...")
+    latest_row = df_fe.tail(1)
     fg_v2.insert(
-        df_fe,
+        latest_row,
         write_options={"wait_for_job": False}   # ← KEY FIX
     )
 
