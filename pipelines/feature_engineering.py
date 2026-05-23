@@ -54,8 +54,10 @@ def transform_features(df: pd.DataFrame) -> pd.DataFrame:
         "pm25_lag_3h",
         "pm10_lag_1h",
         "pm10_lag_3h",
-        "aqi_next_hour",
+
     ]).reset_index(drop=True)
+
+    df["aqi_next_hour"] = df["aqi_next_hour"].fillna(df["aqi"])
 
     return df
 
@@ -120,9 +122,9 @@ def run_feature_pipeline():
     )
 
     print("📤 Inserting into v2 (waiting for job to finish)...")
-    latest_row = df_fe.tail(1)
+
     fg_v2.insert(
-        latest_row,
+        df_fe,
         write_options={"wait_for_job": False}   # ← KEY FIX
     )
 
