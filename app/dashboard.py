@@ -1,14 +1,15 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 import hopsworks
 import yaml
 import os
+import subprocess
 
 # --------------------------------------------------
-# Page config
+# Page config — MUST be first Streamlit command
 # --------------------------------------------------
 st.set_page_config(
     page_title="Karachi AQI Dashboard",
@@ -17,16 +18,73 @@ st.set_page_config(
 )
 
 # --------------------------------------------------
-# Config
+# Paths
 # --------------------------------------------------
-BASE_DIR  = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_DIR  = os.path.join(BASE_DIR, "data")
+BASE_DIR    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_DIR    = os.path.join(BASE_DIR, "data")
 CONFIG_PATH = os.path.join(BASE_DIR, "config", "config.yaml")
 
-with open(CONFIG_PATH) as f:
-    config = yaml.safe_load(f)
+# --------------------------------------------------
+# Config — works locally AND on Streamlit Cloud
+# --------------------------------------------------
+try:
+    # Streamlit Cloud reads from secrets
+    config = {
+        "hopsworks": {
+            "host":    st.secrets["HOPSWORKS_HOST"],
+            "api_key": st.secrets["HOPSWORKS_API_KEY"],
+        },
+        "api": {
+            "weather_key": st.secrets["WEATHER_API_KEY"],
+        },
+        "city": {
+            "lat": 24.8607,
+            "lon": 67.0011,
+        }
+    }
+except Exception:
+    # Local reads from config.yaml
+    with open(CONFIG_PATH) as f:
+        config = yaml.safe_load(f)
 
 PK_TZ = pytz.timezone("Asia/Karachi")
+
+
+# --------------------------------------------------
+# Auto-refresh forecast if CSV is stale
+# --------------------------------------------------
+def is_forecast_stale() -> bool:
+    """Returns True if forecast CSV is missing or older than 12 hours"""
+    daily_path = os.path.join(DATA_DIR, "daily_summary.csv")
+
+    if not os.path.exists(daily_path):
+        return True
+
+    modified_time = datetime.fromtimestamp(
+        os.path.getmtime(daily_path), tz=pytz.UTC
+    )
+    age_hours = (datetime.now(pytz.UTC) - modified_time).total_seconds() / 3600
+    return age_hours > 12
+
+
+def refresh_forecast():
+    """Run forecast.py to generate fresh predictions"""
+    try:
+        result = subprocess.run(
+            ["python", os.path.join(BASE_DIR, "inference", "forecast.py")],
+            cwd=BASE_DIR,
+            capture_output=True,
+            text=True,
+            timeout=120
+        )
+        if result.returncode == 0:
+            st.success("✅ Forecast refreshed successfully")
+        else:
+            st.warning(f"⚠️ Forecast refresh failed: {result.stderr[:200]}")
+    except subprocess.TimeoutExpired:
+        st.warning("⚠️ Forecast refresh timed out — showing last available data")
+    except Exception as e:
+        st.warning(f"⚠️ Could not refresh forecast: {e}")
 
 
 # --------------------------------------------------
@@ -59,7 +117,7 @@ def alert_banner(aqi):
 
 
 # --------------------------------------------------
-# Load data
+# Load data functions
 # --------------------------------------------------
 @st.cache_data(ttl=3600)
 def load_forecast():
@@ -78,9 +136,9 @@ def load_current_conditions():
         host=config["hopsworks"]["host"],
         api_key_value=config["hopsworks"]["api_key"]
     )
-    fs  = project.get_feature_store()
-    fv  = fs.get_feature_view("aqi_features_fv", version=1)
-    df  = fv.get_batch_data().sort_values("timestamp")
+    fs = project.get_feature_store()
+    fv = fs.get_feature_view("aqi_features_fv", version=1)
+    df = fv.get_batch_data().sort_values("timestamp")
     return df.iloc[-1]
 
 
@@ -127,6 +185,21 @@ st.sidebar.caption(f"🕒 {now_pk:%Y-%m-%d %H:%M} PKT")
 st.sidebar.caption("🔄 Data updates every hour")
 st.sidebar.caption("🤖 Model retrains daily")
 
+# Manual refresh button in sidebar
+if st.sidebar.button("🔄 Refresh Forecast Now"):
+    st.cache_data.clear()
+    with st.spinner("Running forecast..."):
+        refresh_forecast()
+    st.rerun()
+
+# --------------------------------------------------
+# Auto-check stale forecast on every page load
+# --------------------------------------------------
+if is_forecast_stale():
+    with st.spinner("🔄 Forecast data is outdated — refreshing..."):
+        refresh_forecast()
+    st.cache_data.clear()
+
 
 # ==================================================
 # PAGE 1 — HOME
@@ -146,9 +219,12 @@ if page == "🏠 Home":
             st.markdown(
                 f"""
                 <div style="border:2px solid {color}; border-radius:16px;
-                            padding:30px; text-align:center; background:rgba(0,0,0,0.1);">
+                            padding:30px; text-align:center;
+                            background:rgba(0,0,0,0.1);">
                     <p style="font-size:48px; margin:0;">{emoji}</p>
-                    <h1 style="color:{color}; font-size:64px; margin:0;">{current_aqi:.0f}</h1>
+                    <h1 style="color:{color}; font-size:64px; margin:0;">
+                        {current_aqi:.0f}
+                    </h1>
                     <h3 style="color:{color};">{category}</h3>
                     <p style="color:#aaa; font-size:12px;">
                         Last updated: {current['timestamp']}
@@ -169,7 +245,7 @@ if page == "🏠 Home":
             c4.metric("📈 Pressure",    f"{current['pressure']:.0f} hPa")
 
             st.markdown("---")
-            st.subheader("📊 Quick Stats")
+            st.subheader("📊 Pollutant Levels")
             c1, c2, c3 = st.columns(3)
             c1.metric("PM2.5", f"{current['pm25']:.1f} µg/m³")
             c2.metric("PM10",  f"{current['pm10']:.1f} µg/m³")
@@ -188,6 +264,13 @@ elif page == "🔮 3-Day Forecast":
     try:
         preds, daily = load_forecast()
 
+        # show when forecast was last generated
+        daily_path    = os.path.join(DATA_DIR, "daily_summary.csv")
+        modified_time = datetime.fromtimestamp(
+            os.path.getmtime(daily_path), tz=pytz.UTC
+        ).astimezone(PK_TZ)
+        st.caption(f"🕒 Forecast generated: {modified_time:%Y-%m-%d %H:%M} PKT")
+
         st.subheader("📅 3-Day Forecast")
         daily_show = daily.head(4)
         cols = st.columns(len(daily_show))
@@ -204,7 +287,9 @@ elif page == "🔮 3-Day Forecast":
                         <h3 style="color:white; margin:0;">{date_label}</h3>
                         <p style="font-size:36px; margin:8px 0;">{emoji}</p>
                         <h2 style="color:{color}; margin:0;">{r['avg_aqi']}</h2>
-                        <p style="color:#ccc; font-size:13px; margin:4px 0;">{category}</p>
+                        <p style="color:#ccc; font-size:13px; margin:4px 0;">
+                            {category}
+                        </p>
                         <hr style="border-color:#444; margin:8px 0;">
                         <p style="color:#aaa; font-size:12px; margin:0;">
                             Min: {r['min_aqi']} | Max: {r['max_aqi']}
@@ -259,7 +344,9 @@ elif page == "🔮 3-Day Forecast":
             hovermode="x unified",
             xaxis_title="Time",
             yaxis_title="AQI",
-            yaxis=dict(range=[0, max(preds["predicted_aqi"].max() + 30, 200)]),
+            yaxis=dict(
+                range=[0, max(preds["predicted_aqi"].max() + 30, 200)]
+            ),
             height=420,
             showlegend=False,
             margin=dict(l=40, r=40, t=20, b=40),
@@ -276,7 +363,7 @@ elif page == "🔮 3-Day Forecast":
 
     except Exception as e:
         st.error(f"Could not load forecast: {e}")
-        st.info("Run `python inference/forecast.py` first")
+        st.info("Forecast data missing — please wait for auto-refresh")
 
 
 # ==================================================
@@ -337,8 +424,8 @@ elif page == "📊 Model Performance":
         st.subheader("📖 What Do These Metrics Mean?")
         c1, c2, c3 = st.columns(3)
         c1.info("**RMSE**\nRoot Mean Square Error.\nAverage error in AQI units. Lower is better.")
-        c2.info("**MAE**\nMean Absolute Error.\nTypical prediction error. More intuitive.")
-        c3.info("**R²**\nR-squared.\nHow much variance explained. Closer to 1.0 is better.")
+        c2.info("**MAE**\nMean Absolute Error.\nTypical prediction error.")
+        c3.info("**R²**\nR-squared.\nVariance explained. Closer to 1.0 is better.")
 
     except Exception as e:
         st.error(f"Could not load model metrics: {e}")
@@ -359,22 +446,22 @@ elif page == "🔬 EDA":
          "Histogram and category breakdown of all recorded AQI values"),
         ("2_aqi_over_time.png",
          "AQI Over Time",
-         "Daily average AQI trend from December 2025 to present with 7-day rolling average"),
+         "Daily average AQI from December 2025 to present with 7-day rolling average"),
         ("3_hourly_patterns.png",
          "Hourly Patterns",
-         "Average AQI by hour of day — identifies rush hour pollution spikes"),
+         "Average AQI by hour — identifies rush hour pollution spikes"),
         ("4_weekly_patterns.png",
          "Weekly Patterns",
          "Average AQI by day of week — weekday vs weekend comparison"),
         ("5_correlation_heatmap.png",
          "Feature Correlation Heatmap",
-         "Correlation between all features and AQI target variable"),
+         "Correlation between all features and AQI target"),
         ("6_seasonal_patterns.png",
          "Seasonal Patterns",
-         "Monthly AQI averages showing seasonal variation across Karachi"),
+         "Monthly AQI averages showing seasonal variation in Karachi"),
         ("7_weather_vs_aqi.png",
          "Weather vs AQI",
-         "Scatter plots showing how temperature, humidity, wind and pressure affect AQI"),
+         "How temperature, humidity, wind and pressure affect AQI"),
     ]
 
     for filename, title, description in plots:
@@ -385,7 +472,7 @@ elif page == "🔬 EDA":
             st.image(path, use_column_width=True)
             st.markdown("---")
         else:
-            st.warning(f"⚠️ Plot not found: {filename}")
+            st.warning(f"Plot not found: {filename}")
             st.info("Run `python eda/eda_analysis.py` to generate plots")
 
 
@@ -396,21 +483,20 @@ elif page == "🧠 SHAP":
     st.title("🧠 Model Explainability (SHAP)")
     st.caption("Understanding what drives AQI predictions")
 
-    plot_dir = os.path.join(BASE_DIR, "explainability", "plots")
-
     st.markdown("""
     **SHAP (SHapley Additive exPlanations)** explains how each feature
-    contributes to the model's predictions. Higher SHAP value = more
-    influence on the AQI prediction.
+    contributes to predictions. Higher SHAP value = more influence on AQI prediction.
     """)
+
+    plot_dir = os.path.join(BASE_DIR, "explainability", "plots")
 
     plots = [
         ("shap_importance.png",
          "Feature Importance",
-         "Average absolute SHAP value per feature — higher means more important"),
+         "Average SHAP value per feature — higher means more important"),
         ("shap_summary.png",
-         "SHAP Summary (Beeswarm)",
-         "Each dot is one prediction — color shows feature value, position shows impact"),
+         "SHAP Summary Beeswarm",
+         "Each dot is one prediction — color = feature value, position = impact"),
     ]
 
     for filename, title, description in plots:
@@ -421,20 +507,21 @@ elif page == "🧠 SHAP":
             st.image(path, use_column_width=True)
             st.markdown("---")
         else:
-            st.warning(f"⚠️ Plot not found: {filename}")
-            st.info("Run `python explainability/shap_explain.py` to generate")
+            st.warning(f"Plot not found: {filename}")
+            st.info("Run `python explainability/shap_explain.py`")
 
-    # dependence plots
-    dep_plots = [f for f in os.listdir(plot_dir)
-                 if f.startswith("shap_dep_")] if os.path.exists(plot_dir) else []
-
-    if dep_plots:
-        st.subheader("📊 Top Feature Dependence Plots")
-        st.caption("Shows how each top feature value affects predictions")
-        for filename in sorted(dep_plots):
-            path = os.path.join(plot_dir, filename)
-            feat = filename.replace("shap_dep_", "").replace(".png", "")
-            st.image(path, caption=f"Dependence: {feat}", use_column_width=True)
+    if os.path.exists(plot_dir):
+        dep_plots = sorted([
+            f for f in os.listdir(plot_dir)
+            if f.startswith("shap_dep_")
+        ])
+        if dep_plots:
+            st.subheader("📊 Top Feature Dependence Plots")
+            for filename in dep_plots:
+                path = os.path.join(plot_dir, filename)
+                feat = filename.replace("shap_dep_", "").replace(".png", "")
+                st.image(path, caption=f"Dependence: {feat}",
+                         use_column_width=True)
 
 
 # ==================================================
@@ -446,31 +533,43 @@ else:
     st.markdown("""
     ## 🌍 Karachi AQI Prediction System
 
-    An end-to-end MLOps pipeline predicting Air Quality Index for
+    End-to-end MLOps pipeline predicting Air Quality Index for
     **Karachi, Pakistan** up to **72 hours ahead**.
 
     ---
 
     ### 🔧 Data Pipeline
-    - **Pollution source**: OpenWeather API (pm2.5, pm10, co, no2, o3, so2, nh3)
-    - **Weather source**: Open-Meteo API (temperature, humidity, wind, pressure)
-    - **Frequency**: Hourly data collection via GitHub Actions
-    - **History**: Dec 2025 → present (3800+ rows and growing)
-    - **Storage**: Hopsworks Feature Store (v1 raw, v2 engineered)
+    - **Pollution**: OpenWeather API (pm2.5, pm10, co, no2, o3, so2, nh3)
+    - **Weather**: Open-Meteo API (temperature, humidity, wind, pressure)
+    - **Frequency**: Hourly via GitHub Actions
+    - **History**: Dec 2025 → present (3800+ rows)
+    - **Storage**: Hopsworks Feature Store
 
-    ### 🤖 Models Trained
+    ### 🤖 Models
     | Model | RMSE | MAE | R² |
     |---|---|---|---|
     | XGBoost | 10.60 | 6.85 | 0.9558 |
     | RandomForest | 11.81 | 6.95 | 0.9451 |
     | Ridge | 22.10 | 16.31 | 0.8080 |
 
-    ### 📊 Features Used (18 total)
+    ### 📊 Features (18 total)
     - **Time**: hour, day, month, day_of_week, is_weekend
     - **Pollution lags**: pm25_lag_1h, pm25_lag_3h, pm10_lag_1h, pm10_lag_3h
-    - **Pollution rolling**: pm25_roll_3h, pm25_roll_6h, pm10_roll_3h
+    - **Rolling**: pm25_roll_3h, pm25_roll_6h, pm10_roll_3h
     - **Weather lags**: temp_lag_1h, humidity_lag_1h, wind_lag_1h
     - **Weather rolling**: temp_roll_3h, humidity_roll_3h, wind_roll_3h
 
-     ### 🔄 Pipeline Architecture
-                """)
+    ### 🎯 AQI Scale
+    | Range | Category |
+    |---|---|
+    | 0–50 | 🟢 Good |
+    | 51–100 | 🟡 Moderate |
+    | 101–150 | 🟠 Unhealthy (Sensitive) |
+    | 151–200 | 🔴 Unhealthy |
+    | 201–300 | 🟣 Very Unhealthy |
+    | 301–500 | ⚫ Hazardous |
+
+    ---
+    📍 Karachi, Pakistan (24.8607°N, 67.0011°E)
+    ⚡ Hourly data | Daily retraining | 72h forecast
+    """)

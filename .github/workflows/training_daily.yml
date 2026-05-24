@@ -2,7 +2,7 @@ name: Daily Model Training Pipeline
 
 on:
   schedule:
-    - cron: "0 2 * * *"   # daily at 2 AM UTC
+    - cron: "0 2 * * *"
   workflow_dispatch:
 
 jobs:
@@ -22,14 +22,50 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      # ✅ THIS IS THE IMPORTANT FIX
       - name: Set PYTHONPATH
         run: echo "PYTHONPATH=$PWD" >> $GITHUB_ENV
 
-      - name: Train and register model
+      - name: Create config.yaml from secrets
+        run: |
+          mkdir -p config
+          cat <<'EOF' > config/config.yaml
+          city:
+            name: Karachi
+            lat: 24.8607
+            lon: 67.0011
+
+          api:
+            aqi_url: "https://api.waqi.info/feed/karachi/"
+            aqi_key: "${{ secrets.AQI_API_KEY }}"
+            weather_url: "https://api.openweathermap.org/data/2.5/weather"
+            weather_key: "${{ secrets.WEATHER_API_KEY }}"
+
+          hopsworks:
+            host: "eu-west.cloud.hopsworks.ai"
+            api_key: "${{ secrets.HOPSWORKS_API_KEY }}"
+
+          alerts:
+            aqi_threshold: 150
+            sender_email: "Huzaifa22.edu.pk@gmail.com"
+            sender_password: "${{ secrets.EMAIL_APP_PASSWORD }}"
+            receiver_email: "z04669289@gmail.com"
+          EOF
+
+      - name: Train model
         env:
-          host: "eu-west.cloud.hopsworks.ai"
           HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
         run: |
-          python training/create_training_data.py
           python training/train_and_register.py
+
+      - name: Run forecast and save CSVs
+        run: |
+          python inference/forecast.py
+
+      - name: Commit fresh forecast CSVs to repo
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions Bot"
+          git add data/latest_predictions.csv
+          git add data/daily_summary.csv
+          git diff --staged --quiet || git commit -m "auto: fresh forecast $(date +'%Y-%m-%d')"
+          git push

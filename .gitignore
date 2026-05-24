@@ -12,3 +12,9 @@ config/config.yaml
 # Models
 models/*.pkl
 
+.streamlit/secrets.toml
+
+data/backup_v1.csv
+data/backup_v2.csv
+
+.env
