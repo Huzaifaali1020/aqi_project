@@ -5,6 +5,9 @@ on:
     - cron: "0 2 * * *"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   training_pipeline:
     runs-on: ubuntu-latest
@@ -69,4 +72,5 @@ jobs:
           git add data/latest_predictions.csv
           git add data/daily_summary.csv
           git diff --staged --quiet || git commit -m "auto: fresh forecast $(date +'%Y-%m-%d')"
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
           git push
