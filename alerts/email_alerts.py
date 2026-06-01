@@ -1,11 +1,11 @@
-import smtplib
-import requests
+import smtplib # lib for sending emails
+import requests # external api call
 import yaml
 import os
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
-import pytz
+import pytz # time zone
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG_PATH = os.path.join(BASE_DIR, "config", "config.yaml")
@@ -60,7 +60,7 @@ def get_current_aqi() -> float:
         (350.5, 500.4, 401, 500),
     ]
     for bp_lo, bp_hi, aqi_lo, aqi_hi in breakpoints:
-        if bp_lo <= pm25 <= bp_hi:
+        if bp_lo <= pm25 <= bp_hi:  ## linear interpolation formula
             return round(
                 (aqi_hi - aqi_lo) / (bp_hi - bp_lo) * (pm25 - bp_lo) + aqi_lo
             )

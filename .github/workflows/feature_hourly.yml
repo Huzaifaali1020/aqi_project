@@ -54,4 +54,4 @@ jobs:
         env:
           PYTHONPATH: .
         run: |
-          python jobs/hourly_ingestion.py    # ← changed to this
+          python jobs/hourly_ingestion.py

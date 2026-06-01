@@ -27,7 +27,7 @@ jobs:
           pip install confluent-kafka
 
       - name: Set PYTHONPATH
-        run: echo "PYTHONPATH=$PWD" >> $GITHUB_ENV
+        run: echo "PYTHONPATH=$PWD" >> $GITHUB_ENV # current project dir to env variable allow internal import
 
       - name: Create config.yaml from secrets
         run: |
