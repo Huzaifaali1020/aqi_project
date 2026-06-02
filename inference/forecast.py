@@ -243,7 +243,7 @@ def run_forecast():
 
     out = os.path.join(BASE_DIR, "data")
     os.makedirs(out, exist_ok=True)
-
+    df.to_csv(os.path.join(out, "latest_features.csv"), index=False)
     preds.to_csv(os.path.join(out, "latest_predictions.csv"), index=False)
     daily.to_csv(os.path.join(out, "daily_summary.csv"), index=False)
 

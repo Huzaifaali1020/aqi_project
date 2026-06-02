@@ -301,15 +301,11 @@ def load_forecast():
 
 @st.cache_data(ttl=3600)
 def load_current_conditions():
-    project = hopsworks.login(
-        host=config["hopsworks"]["host"],
-        api_key_value=config["hopsworks"]["api_key"]
-    )
-    fs = project.get_feature_store()
-    fv = fs.get_feature_view("aqi_features_fv", version=1)
-    df = fv.get_batch_data().sort_values("timestamp")
-    return df.iloc[-1]
-
+    try:
+        df = pd.read_csv(os.path.join(DATA_DIR, "latest_features.csv"))
+        return df.iloc[-1]
+    except Exception:
+        return None
 
 @st.cache_data(ttl=3600)
 def load_model_metrics():
@@ -528,7 +524,12 @@ if page == "Home":
     """, unsafe_allow_html=True)
 
     try:
-        current     = load_current_conditions()
+        current = load_current_conditions()
+
+        if current is None:
+            st.error("No local data available. Run forecast first.")
+            st.stop()
+
         current_aqi = float(current["aqi"])
         color       = aqi_color(current_aqi)
         category    = aqi_category(current_aqi)
