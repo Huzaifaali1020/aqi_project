@@ -212,13 +212,31 @@ PK_TZ = pytz.timezone("Asia/Karachi")
 # --------------------------------------------------
 def is_forecast_stale() -> bool:
     daily_path = os.path.join(DATA_DIR, "daily_summary.csv")
+
     if not os.path.exists(daily_path):
         return True
-    modified_time = datetime.fromtimestamp(
-        os.path.getmtime(daily_path), tz=pytz.UTC
-    )
-    return (datetime.now(pytz.UTC) - modified_time).total_seconds() / 3600 > 12
 
+    try:
+        daily = pd.read_csv(daily_path)
+        daily["date"] = pd.to_datetime(daily["date"]).dt.date
+        today = datetime.now(pytz.timezone("Asia/Karachi")).date()
+
+        # if today is not in the forecast dates, it is stale
+        first_forecast_date = daily["date"].min()
+
+        if first_forecast_date < today:
+            return True
+
+
+        # also check if file is older than 6 hours
+        modified_time = datetime.fromtimestamp(
+            os.path.getmtime(daily_path), tz=pytz.UTC
+        )
+        age_hours = (datetime.now(pytz.UTC) - modified_time).total_seconds() / 3600
+        return age_hours > 6
+
+    except Exception:
+        return True
 
 def refresh_forecast():
     try:
@@ -482,6 +500,7 @@ if is_forecast_stale():
     with st.spinner("Updating forecast data..."):
         refresh_forecast()
     st.cache_data.clear()
+    st.rerun()
 
 
 # ==================================================
