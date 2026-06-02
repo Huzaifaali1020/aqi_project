@@ -11,3 +11,4 @@ joblib
 requests
 pyyaml
 pytz
+hopsworks==4.1.0
