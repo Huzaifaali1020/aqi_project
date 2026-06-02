@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
+import sys
 import plotly.express as px
 from datetime import datetime, timedelta
 import pytz
@@ -241,8 +242,11 @@ def is_forecast_stale() -> bool:
 def refresh_forecast():
     try:
         result = subprocess.run(
-            ["python", os.path.join(BASE_DIR, "inference", "forecast.py")],
-            cwd=BASE_DIR, capture_output=True, text=True, timeout=120
+            [sys.executable, os.path.join(BASE_DIR, "inference", "forecast.py")],
+            cwd=BASE_DIR,
+            capture_output=True,
+            text=True,
+            timeout=120
         )
         if result.returncode == 0:
             st.toast("Forecast refreshed", icon="✓")
@@ -497,10 +501,14 @@ if st.sidebar.button("Refresh Forecast", use_container_width=True):
 
 # auto refresh
 if is_forecast_stale():
-    with st.spinner("Updating forecast data..."):
-        refresh_forecast()
-    st.cache_data.clear()
-    st.rerun()
+    if "forecast_refresh_done" not in st.session_state:
+        st.session_state.forecast_refresh_done = True
+
+        with st.spinner("Updating forecast..."):
+            refresh_forecast()
+            st.cache_data.clear()
+
+        st.rerun()
 
 
 # ==================================================
