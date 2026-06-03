@@ -9,6 +9,7 @@ import yaml
 import os
 import subprocess
 import streamlit.components.v1 as components
+from datetime import timezone
 
 # --------------------------------------------------
 # Page config
@@ -407,6 +408,12 @@ if page == "Home":
 
             col1, col2 = st.columns([1, 2])
             with col1:
+                try:
+                    PKT = timezone(timedelta(hours=5))
+                    ts_pkt = pd.to_datetime(current['timestamp']).astimezone(PKT).strftime('%Y-%m-%d %H:%M')
+                except Exception:
+                    ts_pkt = str(current['timestamp'])
+
                 st.markdown(f"""
                 <div class="aqi-main-card" style="border-left:4px solid {color};">
                     <div style="font-size:72px;font-weight:700;
@@ -418,10 +425,11 @@ if page == "Home":
                         {category}
                     </div>
                     <div style="font-size:11px;color:#6b7280;">
-                        Last updated: {current['timestamp']}
+                        Last updated: {ts_pkt} PKT
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
+
 
             with col2:
                 st.markdown('<div class="section-title">Current Conditions</div>',
