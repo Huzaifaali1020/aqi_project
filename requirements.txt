@@ -10,7 +10,7 @@ xgboost==2.0.3
 plotly==5.22.0
 matplotlib
 seaborn
-
+confluent-kafka
 joblib
 requests
 pyyaml
