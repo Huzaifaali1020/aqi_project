@@ -23,7 +23,7 @@ def save_model(model, model_name="aqi_predictor", rmse=None, y_test=None, y_pred
 
     for attempt in range(1, MAX_RETRIES + 1):
         try:
-            print(f"💾 Connecting to Hopsworks (attempt {attempt}/{MAX_RETRIES}) ...")
+            print(f" Connecting to Hopsworks (attempt {attempt}/{MAX_RETRIES}) ...")
 
             project = hopsworks.login(
                 api_key_value=config["hopsworks"]["api_key"]
@@ -61,16 +61,16 @@ def save_model(model, model_name="aqi_predictor", rmse=None, y_test=None, y_pred
                     description="AQI prediction model (weather + pollution features)"
                 )
 
-                model_obj.save(tmp_dir)  # saves entire folder (model + plot)
+                model_obj.save(tmp_dir)
 
-            print("✅ Model successfully saved to Hopsworks Model Registry")
+            print(" Model successfully saved to Hopsworks Model Registry")
             return
 
         except Exception as e:
-            print(f"⚠️ Attempt {attempt} failed: {e}")
+            print(f" Attempt {attempt} failed: {e}")
             if attempt < MAX_RETRIES:
-                print(f"🔄 Retrying in 15 seconds ...")
+                print(f" Retrying in 15 seconds ...")
                 time.sleep(15)
             else:
-                print("❌ All retries failed.")
+                print(" All retries failed.")
                 raise

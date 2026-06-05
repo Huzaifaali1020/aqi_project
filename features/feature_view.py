@@ -26,12 +26,12 @@ def create_feature_view():
         name="aqi_features_fv",
         version=1,
         query=fg.select_all(),
-        labels=["aqi_next_hour"],        # ← ADDED for Option C
+        labels=["aqi_next_hour"],
         description="AQI feature view for training and inference"
     )
 
-    print("✅ Feature View created with labels")
-    print(f"📋 Label: aqi_next_hour")
+    print(" Feature View created with labels")
+    print(f" Label: aqi_next_hour")
 
 
 if __name__ == "__main__":

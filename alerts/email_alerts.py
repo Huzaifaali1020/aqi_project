@@ -78,7 +78,7 @@ def send_alert(aqi: float):
     sender_password = config["alerts"]["sender_password"]
     receiver_email  = config["alerts"]["receiver_email"]
 
-    subject = f"⚠️ AQI Alert — Karachi | {emoji} {category} ({aqi:.0f})"
+    subject = f" AQI Alert — Karachi | {emoji} {category} ({aqi:.0f})"
 
     body = f"""
     <html>
@@ -87,7 +87,7 @@ def send_alert(aqi: float):
         <div style="max-width: 600px; margin: auto; background: #16213e;
                     border-radius: 12px; padding: 30px;">
 
-            <h2 style="color: #e74c3c;">⚠️ Air Quality Alert — Karachi</h2>
+            <h2 style="color: #e74c3c;"> Air Quality Alert — Karachi</h2>
 
             <div style="background: #0f3460; border-radius: 8px; padding: 20px;
                         text-align: center; margin: 20px 0;">
@@ -98,26 +98,26 @@ def send_alert(aqi: float):
 
             <table style="width: 100%; border-collapse: collapse;">
                 <tr>
-                    <td style="padding: 8px; color: #aaa;">📍 Location</td>
+                    <td style="padding: 8px; color: #aaa;"> Location</td>
                     <td style="padding: 8px;">Karachi, Pakistan</td>
                 </tr>
                 <tr style="background: #0f3460;">
-                    <td style="padding: 8px; color: #aaa;">🕒 Time (PKT)</td>
+                    <td style="padding: 8px; color: #aaa;"> Time (PKT)</td>
                     <td style="padding: 8px;">{now_pk:%Y-%m-%d %H:%M}</td>
                 </tr>
                 <tr>
-                    <td style="padding: 8px; color: #aaa;">📊 AQI Value</td>
+                    <td style="padding: 8px; color: #aaa;">AQI Value</td>
                     <td style="padding: 8px;">{aqi:.0f}</td>
                 </tr>
                 <tr style="background: #0f3460;">
-                    <td style="padding: 8px; color: #aaa;">🏷️ Category</td>
+                    <td style="padding: 8px; color: #aaa;">Category</td>
                     <td style="padding: 8px;">{category}</td>
                 </tr>
             </table>
 
             <div style="background: #e74c3c22; border: 1px solid #e74c3c;
                         border-radius: 8px; padding: 15px; margin: 20px 0;">
-                <h4 style="color: #e74c3c; margin: 0 0 10px 0;">⚕️ Health Recommendations</h4>
+                <h4 style="color: #e74c3c; margin: 0 0 10px 0;"> Health Recommendations</h4>
                 <ul style="color: #ccc; margin: 0; padding-left: 20px;">
                     {"<li>Everyone should avoid outdoor activities</li>" if aqi > 200 else ""}
                     {"<li>Sensitive groups should stay indoors</li>" if aqi > 150 else ""}
@@ -146,9 +146,9 @@ def send_alert(aqi: float):
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(sender_email, sender_password)
             server.sendmail(sender_email, receiver_email, msg.as_string())
-        print(f"✅ Alert email sent: AQI {aqi:.0f} — {category}")
+        print(f"Alert email sent: AQI {aqi:.0f} — {category}")
     except Exception as e:
-        print(f"❌ Email failed: {e}")
+        print(f"Email failed: {e}")
 
 
 # --------------------------------------------------
@@ -156,21 +156,21 @@ def send_alert(aqi: float):
 # --------------------------------------------------
 def check_and_alert():
     threshold = config["alerts"]["aqi_threshold"]
-    print(f"🔍 Checking AQI (threshold: {threshold}) ...")
+    print(f"Checking AQI (threshold: {threshold}) ...")
 
     try:
         current_aqi = get_current_aqi()
         category, emoji = aqi_category(current_aqi)
-        print(f"📍 Current AQI: {current_aqi:.0f} {emoji} {category}")
+        print(f"Current AQI: {current_aqi:.0f} {emoji} {category}")
 
         if current_aqi >= threshold:
-            print(f"⚠️ AQI {current_aqi:.0f} exceeds threshold {threshold} — sending alert")
+            print(f"AQI {current_aqi:.0f} exceeds threshold {threshold} — sending alert")
             send_alert(current_aqi)
         else:
-            print(f"✅ AQI {current_aqi:.0f} is below threshold {threshold} — no alert needed")
+            print(f"AQI {current_aqi:.0f} is below threshold {threshold} — no alert needed")
 
     except Exception as e:
-        print(f"❌ Error checking AQI: {e}")
+        print(f"Error checking AQI: {e}")
 
 
 if __name__ == "__main__":

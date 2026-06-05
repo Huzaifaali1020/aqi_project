@@ -50,7 +50,7 @@ def fetch_current_weather(lat: float, lon: float) -> dict:
     response = requests.get(url, timeout=30).json()
 
     if "current" not in response:
-        print(f"⚠️ Open-Meteo error: {response}")
+        print(f" Open-Meteo error: {response}")
         return {
             "temperature": 0.0,
             "humidity":    0.0,
@@ -84,7 +84,7 @@ def fetch_data() -> pd.DataFrame:
     record     = pollution_resp["list"][0]
     components = record["components"]
 
-    # IMPORTANT: Unique timestamp (no rounding)
+
     timestamp = datetime.now(tz=timezone.utc)
 
     pm25     = float(components["pm2_5"])

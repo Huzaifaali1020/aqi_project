@@ -31,7 +31,7 @@ def backfill(days=30):
     rows = []
 
     for i in range(days):
-        print(f"⏳ Fetching data for {i+1} day(s) ago")
+        print(f" Fetching data for {i+1} day(s) ago")
         df = fetch_data()
 
         # Simulate historical timestamps
@@ -41,7 +41,7 @@ def backfill(days=30):
     full_df = pd.concat(rows, ignore_index=True)
 
     fg.insert(full_df)
-    print(f"✅ Backfilled {len(full_df)} rows into Feature Store")
+    print(f" Backfilled {len(full_df)} rows into Feature Store")
 
 if __name__ == "__main__":
     backfill(days=30)

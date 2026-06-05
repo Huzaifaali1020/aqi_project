@@ -40,14 +40,14 @@ def main():
         version=1
     )
 
-    print("📦 Loading training data from Feature View ...")
+    print(" Loading training data from Feature View ...")
     X_train, X_test, y_train, y_test = fv.get_train_test_split(
         training_dataset_version=1
     )
 
-    print(f"✅ Loaded training data")
-    print(f"🔹 X_train: {X_train.shape}")
-    print(f"🔹 X_test:  {X_test.shape}")
+    print(f" Loaded training data")
+    print(f" X_train: {X_train.shape}")
+    print(f" X_test:  {X_test.shape}")
 
     # --------------------------------------------------
     # Flatten y to Series (Feature View returns DataFrame)
@@ -66,12 +66,12 @@ def main():
     X_test  = X_test[test_mask].reset_index(drop=True)
     y_test  = y_test[test_mask].reset_index(drop=True)
 
-    print(f"📊 After cleaning: train={len(X_train)}, test={len(X_test)}")
+    print(f" After cleaning: train={len(X_train)}, test={len(X_test)}")
 
     # --------------------------------------------------
     # Leakage check
     # --------------------------------------------------
-    print("\n🔍 LEAKAGE CHECK:")
+    print("\n LEAKAGE CHECK:")
     print(f"Correlation of pm25_lag_1h  with aqi_next_hour: "
           f"{X_train['pm25_lag_1h'].corr(y_train):.4f}")
     print(f"Correlation of temp_lag_1h  with aqi_next_hour: "
@@ -94,9 +94,9 @@ def main():
     X_train = X_train.drop(columns=cols_to_drop)
     X_test  = X_test.drop(columns=cols_to_drop)
 
-    print(f"✅ Features used: {X_train.columns.tolist()}")
-    print(f"🔹 Train size: {X_train.shape}")
-    print(f"🔹 Test size:  {X_test.shape}")
+    print(f" Features used: {X_train.columns.tolist()}")
+    print(f" Train size: {X_train.shape}")
+    print(f" Test size:  {X_test.shape}")
 
     # --------------------------------------------------
     # 3 Models
@@ -124,7 +124,7 @@ def main():
     results = {}
 
     for name, model in models.items():
-        print(f"\n🤖 Training {name} ...")
+        print(f"\n Training {name} ...")
         model.fit(X_train, y_train)
         preds = model.predict(X_test)
 
@@ -140,7 +140,7 @@ def main():
             "preds": preds,
         }
 
-        print(f"📈 {name} — RMSE: {rmse:.4f}  MAE: {mae:.4f}  R²: {r2:.4f}")
+        print(f" {name} — RMSE: {rmse:.4f}  MAE: {mae:.4f}  R²: {r2:.4f}")
 
     # --------------------------------------------------
     # Print comparison table
@@ -166,7 +166,7 @@ def main():
     best_mae   = best["mae"]
     best_r2    = best["r2"]
 
-    print(f"\n🏆 Best model : {best_name}")
+    print(f"\n Best model : {best_name}")
     print(f"   RMSE       : {best_rmse:.4f}")
     print(f"   MAE        : {best_mae:.4f}")
     print(f"   R²         : {best_r2:.4f}")
@@ -177,7 +177,7 @@ def main():
     MAX_RETRIES = 3
     for attempt in range(1, MAX_RETRIES + 1):
         try:
-            print(f"\n💾 Saving to Hopsworks (attempt {attempt}/{MAX_RETRIES}) ...")
+            print(f"\n Saving to Hopsworks (attempt {attempt}/{MAX_RETRIES}) ...")
 
             with tempfile.TemporaryDirectory() as tmp_dir:
 
@@ -203,9 +203,9 @@ def main():
                 plot_path = os.path.join(tmp_dir, "evaluation.png")
                 plt.savefig(plot_path)
                 plt.close()
-                print("📊 Evaluation plot saved")
+                print(" Evaluation plot saved")
 
-                # ── Model schema (correct Hopsworks format) ──
+                # ── Model schema
                 input_schema  = Schema(X_train)
                 output_schema = Schema(y_test)
                 model_schema  = ModelSchema(
@@ -232,22 +232,22 @@ def main():
 
                 model_obj.save(tmp_dir)
 
-            print("✅ Model successfully saved to Hopsworks Model Registry")
+            print(" Model successfully saved to Hopsworks Model Registry")
             print("-" * 62)
-            print(f"✅ Best model : {best_name}")
-            print(f"✅ RMSE       : {best_rmse:.4f}")
-            print(f"✅ MAE        : {best_mae:.4f}")
-            print(f"✅ R²         : {best_r2:.4f}")
-            print("🎉 Model registered with full Feature View lineage")
+            print(f" Best model : {best_name}")
+            print(f" RMSE       : {best_rmse:.4f}")
+            print(f" MAE        : {best_mae:.4f}")
+            print(f" R²         : {best_r2:.4f}")
+            print(" Model registered with full Feature View lineage")
             return
 
         except Exception as e:
-            print(f"⚠️ Attempt {attempt} failed: {e}")
+            print(f" Attempt {attempt} failed: {e}")
             if attempt < MAX_RETRIES:
-                print("🔄 Retrying in 15 seconds ...")
+                print(" Retrying in 15 seconds ...")
                 time.sleep(15)
             else:
-                print("❌ All retries failed.")
+                print(" All retries failed.")
                 raise
 
 

@@ -21,17 +21,17 @@ def create_training_data():
         version=1
     )
 
-    print("📦 Creating versioned training dataset ...")
+    print(" Creating versioned training dataset ...")
 
     X_train, X_test, y_train, y_test = fv.train_test_split(
         test_size=0.2,
         description="AQI training dataset with weather features"
     )
 
-    print(f"✅ Training dataset created")
-    print(f"🔹 X_train: {X_train.shape}")
-    print(f"🔹 X_test:  {X_test.shape}")
-    print(f"🔹 Features: {X_train.columns.tolist()}")
+    print(f" Training dataset created")
+    print(f" X_train: {X_train.shape}")
+    print(f" X_test:  {X_test.shape}")
+    print(f" Features: {X_train.columns.tolist()}")
 
     return X_train, X_test, y_train, y_test
 

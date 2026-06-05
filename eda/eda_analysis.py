@@ -36,8 +36,8 @@ def load_data() -> pd.DataFrame:
     df["month_name"] = df["timestamp"].dt.strftime("%b")
     df["month_num"]  = df["timestamp"].dt.month
     df["date"]       = df["timestamp"].dt.date
-    print(f"✅ Loaded {len(df)} rows")
-    print(f"📅 {df['timestamp'].min()} → {df['timestamp'].max()}")
+    print(f"Loaded {len(df)} rows")
+    print(f" {df['timestamp'].min()} → {df['timestamp'].max()}")
     return df
 
 
@@ -81,7 +81,7 @@ def plot_aqi_distribution(df):
     path = os.path.join(PLOT_DIR, "1_aqi_distribution.png")
     plt.savefig(path, dpi=150, bbox_inches="tight")
     plt.close()
-    print(f"💾 Saved: {path}")
+    print(f"Saved: {path}")
 
 
 # --------------------------------------------------
@@ -116,7 +116,7 @@ def plot_aqi_over_time(df):
     path = os.path.join(PLOT_DIR, "2_aqi_over_time.png")
     plt.savefig(path, dpi=150, bbox_inches="tight")
     plt.close()
-    print(f"💾 Saved: {path}")
+    print(f"Saved: {path}")
 
 
 # --------------------------------------------------
@@ -149,7 +149,7 @@ def plot_hourly_patterns(df):
     path = os.path.join(PLOT_DIR, "3_hourly_patterns.png")
     plt.savefig(path, dpi=150, bbox_inches="tight")
     plt.close()
-    print(f"💾 Saved: {path}")
+    print(f"Saved: {path}")
 
 
 # --------------------------------------------------
@@ -181,7 +181,7 @@ def plot_weekly_patterns(df):
     path = os.path.join(PLOT_DIR, "4_weekly_patterns.png")
     plt.savefig(path, dpi=150, bbox_inches="tight")
     plt.close()
-    print(f"💾 Saved: {path}")
+    print(f"Saved: {path}")
 
 
 # --------------------------------------------------
@@ -210,7 +210,7 @@ def plot_correlation_heatmap(df):
     path = os.path.join(PLOT_DIR, "5_correlation_heatmap.png")
     plt.savefig(path, dpi=150, bbox_inches="tight")
     plt.close()
-    print(f"💾 Saved: {path}")
+    print(f"Saved: {path}")
 
 
 # --------------------------------------------------
@@ -249,7 +249,7 @@ def plot_seasonal_patterns(df):
     path = os.path.join(PLOT_DIR, "6_seasonal_patterns.png")
     plt.savefig(path, dpi=150, bbox_inches="tight")
     plt.close()
-    print(f"💾 Saved: {path}")
+    print(f"Saved: {path}")
 
 
 # --------------------------------------------------
@@ -287,7 +287,7 @@ def plot_weather_vs_aqi(df):
     path = os.path.join(PLOT_DIR, "7_weather_vs_aqi.png")
     plt.savefig(path, dpi=150, bbox_inches="tight")
     plt.close()
-    print(f"💾 Saved: {path}")
+    print(f"Saved: {path}")
 
 
 # --------------------------------------------------
@@ -295,7 +295,7 @@ def plot_weather_vs_aqi(df):
 # --------------------------------------------------
 def print_summary(df):
     print("\n" + "=" * 55)
-    print("📊 EDA SUMMARY — KARACHI AQI")
+    print("EDA SUMMARY — KARACHI AQI")
     print("=" * 55)
     print(f"Total hours  : {len(df)}")
     print(f"Date range   : {df['timestamp'].min().date()} → {df['timestamp'].max().date()}")
@@ -315,10 +315,10 @@ def print_summary(df):
 # Main
 # --------------------------------------------------
 if __name__ == "__main__":
-    print("🚀 Starting EDA\n")
+    print("Starting EDA\n")
     df = load_data()
     print_summary(df)
-    print("\n📊 Generating plots...")
+    print("\n Generating plots...")
     plot_aqi_distribution(df)
     plot_aqi_over_time(df)
     plot_hourly_patterns(df)
@@ -326,5 +326,5 @@ if __name__ == "__main__":
     plot_correlation_heatmap(df)
     plot_seasonal_patterns(df)
     plot_weather_vs_aqi(df)
-    print(f"\n✅ All plots saved to: {PLOT_DIR}")
-    print("🎉 EDA complete")
+    print(f"\n All plots saved to: {PLOT_DIR}")
+    print(" EDA complete")

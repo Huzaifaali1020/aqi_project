@@ -44,7 +44,7 @@ def load_model_and_data():
     mr         = project.get_model_registry()
     models     = mr.get_models(name="aqi_predictor")
     model_meta = sorted(models, key=lambda m: m.version)[-1]
-    print(f"📦 Loading model v{model_meta.version}")
+    print(f" Loading model v{model_meta.version}")
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         model_meta.download(tmp_dir)
@@ -59,12 +59,12 @@ def load_model_and_data():
     X = df.drop(columns=cols_to_drop)
     X = X[FEATURE_COLS].dropna().reset_index(drop=True)
 
-    print(f"✅ Data loaded: {X.shape}")
+    print(f" Data loaded: {X.shape}")
     return model, X
 
 
 def run_shap_analysis(model, X):
-    print("🔍 Computing SHAP values ...")
+    print(" Computing SHAP values ...")
     explainer = shap.Explainer(model.predict, X)
     shap_values = explainer(X)
 
@@ -76,7 +76,7 @@ def run_shap_analysis(model, X):
     plt.savefig(os.path.join(PLOT_DIR, "shap_importance.png"),
                 dpi=150, bbox_inches="tight")
     plt.close()
-    print("💾 Saved: shap_importance.png")
+    print(" Saved: shap_importance.png")
 
     # ── Beeswarm ─────────────────────────────────
     plt.figure(figsize=(10, 7))
@@ -86,7 +86,7 @@ def run_shap_analysis(model, X):
     plt.savefig(os.path.join(PLOT_DIR, "shap_summary.png"),
                 dpi=150, bbox_inches="tight")
     plt.close()
-    print("💾 Saved: shap_summary.png")
+    print(" Saved: shap_summary.png")
 
     # ── Dependence plots for top 3 features ──────
     top_features = X.columns[
@@ -101,7 +101,7 @@ def run_shap_analysis(model, X):
         plt.savefig(os.path.join(PLOT_DIR, f"shap_dep_{feat}.png"),
                     dpi=150, bbox_inches="tight")
         plt.close()
-        print(f"💾 Saved: shap_dep_{feat}.png")
+        print(f" Saved: shap_dep_{feat}.png")
 
     # ── Print importance table ───────────────────
     importance = pd.DataFrame({
@@ -110,7 +110,7 @@ def run_shap_analysis(model, X):
     }).sort_values("SHAP_Value", ascending=False).reset_index(drop=True)
 
     print("\n" + "=" * 45)
-    print("🏆 FEATURE IMPORTANCE (SHAP)")
+    print(" FEATURE IMPORTANCE (SHAP)")
     print("=" * 45)
     for _, row in importance.iterrows():
         bar = "█" * int(row["SHAP_Value"] * 10)
@@ -121,8 +121,8 @@ def run_shap_analysis(model, X):
 
 
 if __name__ == "__main__":
-    print("🚀 Starting SHAP analysis\n")
+    print(" Starting SHAP analysis\n")
     model, X = load_model_and_data()
     run_shap_analysis(model, X)
-    print(f"\n✅ Plots saved to: {PLOT_DIR}")
-    print("🎉 SHAP analysis complete")
+    print(f"\n Plots saved to: {PLOT_DIR}")
+    print(" SHAP analysis complete")

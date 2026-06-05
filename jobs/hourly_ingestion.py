@@ -40,33 +40,33 @@ def run_hourly_ingestion():
         primary_key=["timestamp"],
         description="Raw hourly air quality + weather data",
         online_enabled=False
-        # ← no event_time here
+
     )
 
     df = fetch_data()
 
     if df is None or df.empty:
-        print("⚠️ No data fetched")
+        print(" No data fetched")
         return
 
     new_timestamp = df["timestamp"].iloc[0]
 
-    # ── Skip if timestamp already exists ─────────
+
     try:
         existing = fg_raw.read()
         existing["timestamp"] = pd.to_datetime(existing["timestamp"], utc=True)
         if new_timestamp in existing["timestamp"].values:
-            print(f"⚠️ {new_timestamp} already exists — skipping insert")
+            print(f" {new_timestamp} already exists — skipping insert")
             return
     except Exception:
         pass
 
-    print(f"📥 Inserting raw data for {new_timestamp}")
+    print(f" Inserting raw data for {new_timestamp}")
     fg_raw.insert(
         df,
-        write_options={"wait_for_job": True}   # ← KEY FIX
+        write_options={"wait_for_job": True}
     )
-    print("✅ Raw data inserted into aqi_features v1")
+    print(" Raw data inserted into aqi_features v1")
     df_check = fg_raw.read()
     print(df["timestamp"].max())
 
@@ -75,7 +75,7 @@ def run_hourly_ingestion():
 
     # ── Feature engineering ──────────────────────
     run_feature_pipeline()
-    print("⚙️ Feature engineering completed successfully")
+    print(" Feature engineering completed successfully")
 
 
 if __name__ == "__main__":

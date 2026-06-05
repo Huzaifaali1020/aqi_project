@@ -66,7 +66,7 @@ def transform_features(df: pd.DataFrame) -> pd.DataFrame:
 # Main pipeline
 # --------------------------------------------------
 def run_feature_pipeline():
-    print("🚀 Starting feature engineering pipeline")
+    print(" Starting feature engineering pipeline")
 
     project = hopsworks.login(
         host=config["hopsworks"]["host"],
@@ -83,10 +83,10 @@ def run_feature_pipeline():
     )
 
     df_raw = fg_v1.read().sort_values("timestamp").reset_index(drop=True)
-    print(f"📥 Read {len(df_raw)} rows from v1")
+    print(f" Read {len(df_raw)} rows from v1")
 
     if len(df_raw) < 10:
-        print("⏳ Not enough data")
+        print(" Not enough data")
         return
 
     # ── Clean bad rows ───────────────────────────
@@ -95,14 +95,14 @@ def run_feature_pipeline():
     ].reset_index(drop=True)
 
     if len(df_raw) < 10:
-        print("⏳ Not enough clean data")
+        print(" Not enough clean data")
         return
 
     # ── Feature engineering ──────────────────────
     df_fe = transform_features(df_raw)
 
     if df_fe.empty:
-        print("⚠️ Empty feature dataframe — skipping")
+        print(" Empty feature dataframe — skipping")
         return
 
     df_fe = df_fe.drop(
@@ -110,8 +110,8 @@ def run_feature_pipeline():
         errors="ignore"
     )
 
-    print(f"📊 Engineered {len(df_fe)} rows")
-    print(f"📅 Latest timestamp: {df_fe['timestamp'].max()}")
+    print(f" Engineered {len(df_fe)} rows")
+    print(f" Latest timestamp: {df_fe['timestamp'].max()}")
 
     # ── Insert into v2 with wait ──────────────────
     fg_v2 = fs.get_or_create_feature_group(
@@ -121,14 +121,14 @@ def run_feature_pipeline():
         online_enabled=False
     )
 
-    print("📤 Inserting into v2 (waiting for job to finish)...")
+    print(" Inserting into v2 (waiting for job to finish)...")
 
     fg_v2.insert(
         df_fe,
         write_options={"wait_for_job": False}   # ← KEY FIX
     )
 
-    print("✅ Feature engineering pipeline completed successfully")
+    print(" Feature engineering pipeline completed successfully")
 
 
 # --------------------------------------------------

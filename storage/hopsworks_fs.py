@@ -21,15 +21,15 @@ def read_features():
         version=1
     )
 
-    # ✅ THIS reads the offline training dataset
+
     df = fv.get_batch_data()
 
     if df.empty:
-        raise ValueError("❌ No training data found")
+        raise ValueError(" No training data found")
 
     df = df.sort_values("timestamp").reset_index(drop=True)
 
-    print(f"✅ Loaded {len(df)} rows from Feature View")
+    print(f" Loaded {len(df)} rows from Feature View")
     print("Columns:", df.columns.tolist())
 
     return df

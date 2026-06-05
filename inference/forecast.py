@@ -75,7 +75,7 @@ def load_latest_features(project):
     df = df.sort_values("timestamp").reset_index(drop=True)
     df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
 
-    # forward fill only — no bfill to avoid future leakage
+
     df = df.ffill()
 
     print(f"Loaded {len(df)} rows from Feature View")
@@ -182,7 +182,7 @@ def forecast_72h(model, df: pd.DataFrame) -> pd.DataFrame:
             X = X.fillna(0.0)
 
         pred     = float(model.predict(X)[0])
-        pred     = max(10.0, min(500.0, pred))   # clamp — minimum 10, not 1
+        pred     = max(10.0, min(500.0, pred))
 
         cat = aqi_category(pred)
 

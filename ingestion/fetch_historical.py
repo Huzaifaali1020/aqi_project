@@ -54,7 +54,7 @@ def fetch_historical_weather_openmeteo(
     response = requests.get(url).json()
 
     if "hourly" not in response:
-        print(f"❌ Open-Meteo error: {response}")
+        print(f" Open-Meteo error: {response}")
         return {}
 
     hourly = response["hourly"]
@@ -73,7 +73,7 @@ def fetch_historical_weather_openmeteo(
                            if hourly["surface_pressure"][i] is not None else None,
         }
 
-    print(f"✅ Got weather for {len(weather_by_ts)} hours from Open-Meteo")
+    print(f" Got weather for {len(weather_by_ts)} hours from Open-Meteo")
     return weather_by_ts
 
 
@@ -97,10 +97,10 @@ def fetch_historical(start_dt: datetime, end_dt: datetime) -> pd.DataFrame:
     pollution_resp = requests.get(pollution_url).json()
 
     if "list" not in pollution_resp:
-        print(f"❌ Pollution API error: {pollution_resp}")
+        print(f" Pollution API error: {pollution_resp}")
         return pd.DataFrame()
 
-    print(f"✅ Got {len(pollution_resp['list'])} pollution records")
+    print(f" Got {len(pollution_resp['list'])} pollution records")
 
     # ── 2. Weather from Open-Meteo (free) ────────
     start_date = start_dt.strftime("%Y-%m-%d")
@@ -150,7 +150,7 @@ def fetch_historical(start_dt: datetime, end_dt: datetime) -> pd.DataFrame:
         })
 
     if missing_weather > 0:
-        print(f"⚠️ {missing_weather} rows had no weather match — will be dropped")
+        print(f" {missing_weather} rows had no weather match — will be dropped")
 
     df = pd.DataFrame(records)
 
@@ -158,10 +158,10 @@ def fetch_historical(start_dt: datetime, end_dt: datetime) -> pd.DataFrame:
     df = df[(df["aqi"] > 5) & (df["aqi"] < 499)].reset_index(drop=True)
     df = df.dropna().reset_index(drop=True)
 
-    print(f"✅ Got {len(df)} clean hourly rows after filtering")
-    print(f"🌡️  Temp range    : {df['temperature'].min():.1f} – {df['temperature'].max():.1f} °C")
-    print(f"💧 Humidity range : {df['humidity'].min():.1f} – {df['humidity'].max():.1f} %")
-    print(f"💨 Wind range     : {df['wind_speed'].min():.1f} – {df['wind_speed'].max():.1f} m/s")
+    print(f" Got {len(df)} clean hourly rows after filtering")
+    print(f" Temp range    : {df['temperature'].min():.1f} – {df['temperature'].max():.1f} °C")
+    print(f" Humidity range : {df['humidity'].min():.1f} – {df['humidity'].max():.1f} %")
+    print(f" Wind range     : {df['wind_speed'].min():.1f} – {df['wind_speed'].max():.1f} m/s")
 
     return df
 
@@ -183,9 +183,9 @@ def upload_to_hopsworks(df: pd.DataFrame):
         online_enabled=False
     )
 
-    print(f"📤 Uploading {len(df)} rows to Hopsworks v1 ...")
+    print(f" Uploading {len(df)} rows to Hopsworks v1 ...")
     fg_v1.insert(df, write_options={"wait_for_job": True})
-    print(f"✅ Successfully uploaded {len(df)} rows to aqi_features v1")
+    print(f" Successfully uploaded {len(df)} rows to aqi_features v1")
 
 
 # --------------------------------------------------
@@ -198,15 +198,15 @@ if __name__ == "__main__":
     df_hist = fetch_historical(start, end)
 
     if df_hist.empty:
-        print("❌ No data returned — check API keys and network")
+        print(" No data returned — check API keys and network")
     else:
-        print(f"\n📊 Total rows  : {len(df_hist)}")
-        print(f"📅 Date range  : {df_hist['timestamp'].min()} → {df_hist['timestamp'].max()}")
-        print(f"📈 AQI range   : {df_hist['aqi'].min()} – {df_hist['aqi'].max()}")
+        print(f"\n Total rows  : {len(df_hist)}")
+        print(f" Date range  : {df_hist['timestamp'].min()} → {df_hist['timestamp'].max()}")
+        print(f" AQI range   : {df_hist['aqi'].min()} – {df_hist['aqi'].max()}")
 
         out_path = os.path.join(BASE_DIR, "data", "historical_raw.csv")
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
         df_hist.to_csv(out_path, index=False)
-        print(f"💾 Saved to {out_path}")
+        print(f" Saved to {out_path}")
 
         upload_to_hopsworks(df_hist)
