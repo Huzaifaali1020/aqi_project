@@ -125,7 +125,7 @@ def run_feature_pipeline():
 
     fg_v2.insert(
         df_fe,
-        write_options={"wait_for_job": True}   # ← KEY FIX
+        write_options={"wait_for_job": False}   # ← KEY FIX
     )
 
     print("✅ Feature engineering pipeline completed successfully")
