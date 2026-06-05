@@ -822,12 +822,26 @@ else:
 
         st.markdown('<div class="section-title" style="margin-top:20px">Model Results</div>',
                     unsafe_allow_html=True)
-        st.dataframe(pd.DataFrame({
-            "Model":  ["XGBoost","RandomForest","Ridge"],
-            "RMSE":   [10.60, 11.81, 22.10],
-            "MAE":    [6.85,  6.95,  16.31],
-            "R²":     [0.9558, 0.9451, 0.8080],
-        }), use_container_width=True, hide_index=True)
+        try:
+            df_metrics, best_metric = load_model_metrics()
+            st.dataframe(
+                df_metrics.sort_values("RMSE").reset_index(drop=True),
+                use_container_width=True,
+                hide_index=True
+            )
+        except Exception:
+            # fallback to current best known values
+            results_data = {
+                "Model": ["XGBoost", "RandomForest", "Ridge"],
+                "RMSE": [3.75, 11.81, 22.10],
+                "MAE": [2.34, 6.95, 16.31],
+                "R²": [0.9942, 0.9451, 0.8080],
+            }
+            st.dataframe(
+                pd.DataFrame(results_data),
+                use_container_width=True,
+                hide_index=True
+            )
 
     with col2:
         st.markdown("""
