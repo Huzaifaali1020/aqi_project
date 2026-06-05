@@ -1,5 +1,5 @@
 date,avg_aqi,min_aqi,max_aqi,category,emoji
-2026-06-04,96.5,89.6,100.2,Moderate,🟡
-2026-06-05,90.0,89.7,90.2,Moderate,🟡
+2026-06-05,96.8,89.8,100.7,Unhealthy for Sensitive,🟠
 2026-06-06,90.1,89.9,90.3,Moderate,🟡
-2026-06-07,90.4,90.4,90.4,Moderate,🟡
+2026-06-07,90.2,90.0,90.4,Moderate,🟡
+2026-06-08,89.9,89.9,89.9,Moderate,🟡
