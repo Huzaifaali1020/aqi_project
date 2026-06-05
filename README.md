@@ -80,6 +80,7 @@ GitHub Actions missing confluent-kafka dependency caused insert operations to fa
 Streamlit Cloud auto-refreshing forecast was causing the dashboard to regenerate predictions on the cloud server where Hopsworks connections returned empty data, producing AQI values of 1.0. The fix was detecting when the app runs on Streamlit Cloud and skipping the auto-refresh entirely, relying instead on GitHub Actions to commit fresh CSVs to the repository daily.
 
 **Project Structure--**
+
 <img width="807" height="494" alt="image" src="https://github.com/user-attachments/assets/0a6ae5d2-b4b3-4700-a5b1-9c7c4f22a6bb" />
 <img width="728" height="563" alt="image" src="https://github.com/user-attachments/assets/564c8e52-009a-4334-921a-788f066a1d39" />
 
@@ -100,3 +101,26 @@ Good (0-50) means no health impact. Moderate (51-100) means very sensitive peopl
 
 **Data Sources--**
 Pollution measurements including PM2.5, PM10, CO, NO, NO2, O3, SO2, and NH3 come from the OpenWeather Air Pollution API. Weather measurements including temperature, humidity, wind speed, and pressure come from the Open-Meteo API which is completely free with no API key required. Historical data goes back to December 1, 2025 and the dataset grows by one row every hour.
+
+**HOPSWORK**
+
+**FEATURES GROUP**
+
+<img width="1914" height="925" alt="image" src="https://github.com/user-attachments/assets/6e4dff0c-6f4d-4788-82dd-37c0897cc8d3" />
+<img width="1919" height="913" alt="image" src="https://github.com/user-attachments/assets/348882d7-66a8-464b-933b-09a746639fe6" />
+<img width="1883" height="955" alt="image" src="https://github.com/user-attachments/assets/ec603b16-7d3f-4bb9-b18d-6da211a185b8" />
+<img width="1919" height="961" alt="image" src="https://github.com/user-attachments/assets/a5078f61-6cd4-437f-b3d4-902d79909a3e" />
+
+
+**JOBS**
+
+<img width="1886" height="903" alt="image" src="https://github.com/user-attachments/assets/73cdc9b3-6be3-4f4b-b29f-713e5690ddc1" />
+<img width="1901" height="851" alt="image" src="https://github.com/user-attachments/assets/ba846dc9-9a52-419a-a735-0821b5a7e067" />
+<img width="1919" height="945" alt="image" src="https://github.com/user-attachments/assets/8244a628-22eb-4ca8-a753-c096f1d839ca" />
+
+
+**MODEL REGISTRY**
+
+<img width="1913" height="892" alt="image" src="https://github.com/user-attachments/assets/9becf046-b9a4-4908-98cc-a8d6af6fbbf7" />
+<img width="1915" height="937" alt="image" src="https://github.com/user-attachments/assets/f290fa14-929f-4a94-b3d4-69948b11fbb0" />
+
