@@ -40,10 +40,31 @@ def main():
         version=1
     )
 
-    print(" Loading training data from Feature View ...")
-    X_train, X_test, y_train, y_test = fv.get_train_test_split(
-        training_dataset_version=1
-    )
+
+    print("Loading fresh data from Feature View ...")
+    df = fv.get_batch_data()
+    df = df.sort_values("timestamp").reset_index(drop=True)
+
+    print(f"Loaded {len(df)} fresh rows")
+    print(f"Latest data: {df['timestamp'].max()}")
+
+    TARGET = "aqi_next_hour"
+
+    df = df[(df["aqi"] > 5) & (df["aqi"] < 499)]
+    df = df[(df[TARGET] > 5) & (df[TARGET] < 499)]
+    df = df.dropna(subset=[TARGET])
+    df = df.reset_index(drop=True)
+
+    print(f"After cleaning: {len(df)} rows")
+
+    split_idx = int(len(df) * 0.8)
+    train_df = df.iloc[:split_idx].copy()
+    test_df = df.iloc[split_idx:].copy()
+
+    y_train = train_df.pop(TARGET)
+    y_test = test_df.pop(TARGET)
+    X_train = train_df
+    X_test = test_df
 
     print(f" Loaded training data")
     print(f" X_train: {X_train.shape}")
@@ -223,7 +244,6 @@ def main():
                     },
                     model_schema=model_schema,
                     feature_view=fv,
-                    training_dataset_version=1,
                     description=(
                         f"AQI 6h forecast — {best_name} "
                         f"(RMSE={best_rmse:.2f})"
