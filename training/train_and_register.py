@@ -229,7 +229,7 @@ def main():
                     output_schema=output_schema
                 )
 
-                # register model — NO feature_view, NO training_dataset_version
+
                 model_obj = mr.python.create_model(
                     name="aqi_predictor",
                     metrics={
