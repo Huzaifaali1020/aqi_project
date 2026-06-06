@@ -8,6 +8,9 @@ Developed by: Syed Huzaifa Ali — 10Pearls Data Science Internship 2026
 Karachi AQI Predictor is a fully automated, production-grade machine learning system that predicts Air Quality Index for Karachi, Pakistan up to 72 hours ahead. 
 The system collects real-time pollution and weather data every hour, engineers features automatically, retrains machine learning models daily, and serves predictions through an interactive Streamlit dashboard all without any manual intervention.
 
+**THERE IS ALWAYS A POSSIBILITY IN HOPSWORK THAT MATERIALIZATION TRANSITION FROM INITIALIZATION TO SUBMITTED STATE BUT NOT FINISH BECAUSE OF SERVER DOWNSIDE IN HOPSWORK I ALREADY PUT MANY CHECKS FOR IT BUT IF MATERIALIZATION IS STUCK BY SERVER END THEN IT CAN BE RESOLVED BY OWN AFTER SOMETIME**
+
+
 **For a better understanding of the visualizations, please refer to the EDA file and its corresponding plots file. Similarly, for SHAP-based explanations, open the explainability file and then the plots file to explore the visual outputs.**
 
 **PAGE 1**
