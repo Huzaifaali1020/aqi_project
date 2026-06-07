@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime, timezone
 import os
 import yaml
-
+import time
 # --------------------------------------------------
 # Load config
 # --------------------------------------------------
@@ -47,25 +47,41 @@ def fetch_current_weather(lat: float, lon: float) -> dict:
         f"&timezone=UTC"
     )
 
-    response = requests.get(url, timeout=30).json()
+    # retry up to 3 times with 10 second wait between attempts
+    for attempt in range(3):
+        try:
+            response = requests.get(url, timeout=30).json()
 
-    if "current" not in response:
-        print(f" Open-Meteo error: {response}")
-        return {
-            "temperature": 0.0,
-            "humidity":    0.0,
-            "wind_speed":  0.0,
-            "pressure":    0.0,
-        }
+            if "current" not in response:
+                print(f"Open-Meteo error: {response}")
+                return {
+                    "temperature": 0.0,
+                    "humidity":    0.0,
+                    "wind_speed":  0.0,
+                    "pressure":    0.0,
+                }
 
-    current = response["current"]
-    return {
-        "temperature": float(current["temperature_2m"]),
-        "humidity":    float(current["relativehumidity_2m"]),
-        "wind_speed":  float(current["windspeed_10m"]),
-        "pressure":    float(current["surface_pressure"]),
-    }
+            current = response["current"]
+            return {
+                "temperature": float(current["temperature_2m"]),
+                "humidity":    float(current["relativehumidity_2m"]),
+                "wind_speed":  float(current["windspeed_10m"]),
+                "pressure":    float(current["surface_pressure"]),
+            }
 
+        except Exception as e:
+            print(f"Weather fetch attempt {attempt + 1}/3 failed: {e}")
+            if attempt < 2:
+                print("Retrying in 10 seconds...")
+                time.sleep(10)
+            else:
+                print("All 3 attempts failed — using default weather values")
+                return {
+                    "temperature": 0.0,   # so if time out then it gives zero value for these attribute this is the check when open meteo server down
+                    "humidity":    0.0,
+                    "wind_speed":  0.0,
+                    "pressure":    0.0,
+                }
 
 # --------------------------------------------------
 # Fetch air quality + weather
